@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroConnect - Marketplace</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&display=swap" rel="stylesheet">
+<link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=100&q=80&fit=crop&auto=format" alt="Logo" onerror="this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80'" style="width:36px;height:36px;border-radius:50%;margin-right:8px;">
+      AgroConnect
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="/" data-i18n="nav.home">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/marketplace" data-i18n="nav.marketplace">Marketplace</a></li>
+        <li class="nav-item"><a class="nav-link nav-dashboard" href="#" data-i18n="nav.dashboard">📊 Dashboard</a></li>
+      </ul>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div>
+          <button class="lang-btn" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="hi">हि</button>
+          <button class="lang-btn" data-lang="ta">த</button>
+          <button class="lang-btn" data-lang="te">తె</button>
+        </div>
+        <button class="btn btn-sm btn-warning cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cartPanel">
+          🛒 <span class="cart-badge">0</span>
+        </button>
+        <button class="btn btn-sm btn-light nav-login" onclick="showModal('loginModal')" data-i18n="nav.login">🔐 Login / Register</button>
+        <div class="nav-logout d-none align-items-center gap-2">
+          <span class="badge bg-light text-success nav-user-name fw-bold"></span>
+          <span class="badge bg-warning text-dark nav-role-badge" style="font-size:0.65rem;"></span>
+          <button class="btn btn-sm btn-outline-light btn-logout" data-i18n="nav.logout">Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="container-fluid py-4">
+  <div class="row g-3">
+    <!-- Filters Sidebar -->
+    <div class="col-lg-2">
+      <div class="filter-sidebar">
+        <h6 data-i18n="filter.category">Category</h6>
+        <div id="categoryFilters">
+          <div class="form-check"><input class="form-check-input" type="radio" name="cat" value="" id="catAll" checked onchange="applyFilters()"><label class="form-check-label" for="catAll">All</label></div>
+        </div>
+        <hr>
+        <h6 data-i18n="filter.price">Price Range</h6>
+        <div class="d-flex gap-1 mb-2">
+          <input type="number" id="minPrice" class="form-control form-control-sm" placeholder="Min" onchange="applyFilters()">
+          <input type="number" id="maxPrice" class="form-control form-control-sm" placeholder="Max" onchange="applyFilters()">
+        </div>
+        <hr>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="preHarvestFilter" onchange="applyFilters()">
+          <label class="form-check-label small" for="preHarvestFilter" data-i18n="filter.preharvest">Pre-Harvest Only</label>
+        </div>
+        <hr>
+        <h6 data-i18n="filter.sort">Sort By</h6>
+        <select id="sortBy" class="form-select form-select-sm" onchange="applyFilters()">
+          <option value="latest">Latest</option>
+          <option value="price_low">Price: Low → High</option>
+          <option value="price_high">Price: High → Low</option>
+          <option value="popular">Most Popular</option>
+        </select>
+        <hr>
+        <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilters()">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="col-lg-10">
+      <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search fruits, vegetables, grains..." data-i18n-attr="placeholder" data-i18n="search.placeholder" oninput="debounceSearch()">
+      </div>
+      <div class="row g-3" id="productsGrid">
+        <div class="col-12 text-center py-5"><div class="spinner"></div><p class="text-muted mt-2">Loading products...</p></div>
+      </div>
+      <div class="d-flex justify-content-center mt-4" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MY ACCOUNT (shown when logged in as customer) -->
+<div id="myAccountSection" style="display:none;" class="container-fluid py-4">
+  <h3 class="section-title mb-4" id="myAccountAnchor">👤 My Account</h3>
+  <div class="row g-4">
+    <!-- Profile -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white"><strong>Customer Profile</strong></div>
+        <div class="card-body">
+          <div class="text-center mb-3">
+            <img id="profileImg" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80&fit=crop&auto=format" class="profile-img" alt="Profile">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Name</label>
+            <input type="text" id="profName" class="form-control form-control-sm">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Email</label>
+            <input type="email" id="profEmail" class="form-control form-control-sm" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Phone</label>
+            <input type="tel" id="profPhone" class="form-control form-control-sm">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Location</label>
+            <input type="text" id="profLocation" class="form-control form-control-sm">
+          </div>
+          <button class="btn btn-success btn-sm w-100 mt-2" onclick="saveProfile()">Save Profile</button>
+        </div>
+      </div>
+    </div>
+    <!-- Orders -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white d-flex justify-content-between">
+          <strong>My Orders</strong>
+          <button class="btn btn-sm btn-light" onclick="loadMyOrders()">🔄 Refresh</button>
+        </div>
+        <div class="card-body p-0">
+          <div id="myOrdersList" class="p-3">
+            <p class="text-center text-muted py-3">Loading orders...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT BAR -->
+<div class="support-bar mt-4" id="supportSection">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <span>💬 Need help? Contact our support team</span>
+    <button class="btn btn-sm btn-light" onclick="toggleSupport()">Contact Support</button>
+  </div>
+</div>
+<div id="supportChat" style="display:none;" class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="support-chat" id="supportMessages"><p class="text-muted text-center small">No messages yet</p></div>
+      <div class="d-flex gap-2 mt-2">
+        <input type="text" id="supportInput" class="form-control" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendSupport()">
+        <button class="btn btn-warning" onclick="sendSupport()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CART OFFCANVAS -->
+<div class="offcanvas offcanvas-end" id="cartPanel" style="width:420px;">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title fw-bold" data-i18n="cart.title">🛒 Shopping Cart</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column" style="overflow-y:auto;">
+    <div id="cartItems" class="flex-grow-1">
+      <p class="text-center text-muted py-4" data-i18n="cart.empty">Your cart is empty</p>
+    </div>
+    <div id="cartFooter" style="display:none;">
+      <hr>
+      <!-- Coupon -->
+      <div class="mb-3">
+        <div class="d-flex gap-2">
+          <input type="text" id="couponInput" class="form-control form-control-sm" placeholder="Coupon code (FIRST25)" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn btn-outline-success btn-sm" onclick="applyCoupon()">Apply</button>
+          <button class="btn btn-outline-secondary btn-sm" id="removeCouponBtn" style="display:none;" onclick="removeCoupon()">✕</button>
+        </div>
+        <div id="couponMsg" class="small mt-1"></div>
+      </div>
+      <!-- Totals -->
+      <div class="d-flex justify-content-between"><span>Subtotal:</span><span id="cartSubtotal">₹0</span></div>
+      <div class="d-flex justify-content-between text-success" id="discountRow" style="display:none !important;">
+        <span>Discount:</span><span id="cartDiscount">-₹0</span>
+      </div>
+      <div class="d-flex justify-content-between fw-bold fs-5 mt-1 border-top pt-2">
+        <span>Total:</span><span id="cartTotal">₹0</span>
+      </div>
+      <!-- Delivery Location -->
+      <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <strong class="small" data-i18n="cart.location">📍 Delivery Location</strong>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-success active" id="btnMap" onclick="switchDelivery('map')">📍 Map</button>
+            <button class="btn btn-outline-success" id="btnText" onclick="switchDelivery('text')">✏️ Type</button>
+          </div>
+        </div>
+        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="useGPS()">📡 Use My GPS Location</button>
+        <div id="mapDelivery">
+          <div class="map-container mb-2"><div id="cartMap"></div></div>
+          <div id="mapAddress" class="small text-muted mt-1"></div>
+        </div>
+        <div id="textDelivery" style="display:none;">
+          <textarea id="textAddress" class="form-control form-control-sm" rows="2" placeholder="Enter full delivery address..."></textarea>
+        </div>
+        <div id="selectedAddressBox" class="alert alert-success small mt-2 py-2" style="display:none;"></div>
+      </div>
+      <button class="btn btn-success w-100 fw-bold mt-3" onclick="proceedToPayment()" data-i18n="cart.checkout">Proceed to Pay</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal fade" id="paymentModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">💳 Secure Checkout</h5>
+        <button type="button" class="btn-close btn-close-white" onclick="cancelPayment()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Step 1: Order Summary -->
+        <div class="payment-step active" id="payStep1">
+          <h6 class="fw-bold mb-3">📋 Order Summary</h6>
+          <div id="orderSummary"></div>
+          <hr>
+          <div class="row">
+            <div class="col-6"><strong>Delivery Address:</strong><br><small id="summaryAddress" class="text-muted"></small></div>
+            <div class="col-6 text-end"><strong>Estimated Delivery:</strong><br><small class="text-muted" id="summaryDelivery"></small></div>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between fs-5 fw-bold"><span>Total:</span><span id="summaryTotal" class="text-success"></span></div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-secondary flex-fill" onclick="cancelPayment()">Cancel</button>
+            <button class="btn btn-success flex-fill fw-bold" onclick="showPayStep(2)">Choose Payment →</button>
+          </div>
+        </div>
+        <!-- Step 2: Payment Method -->
+        <div class="payment-step" id="payStep2">
+          <h6 class="fw-bold mb-3">💳 Select Payment Method</h6>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="card border-2 pay-method-card p-3 text-center" onclick="selectPayMethod('upi')" id="pmUpi" style="cursor:pointer;">
+                <div class="fs-3">📱</div><div class="fw-semibold small">UPI / GPay / PhonePe</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card border-2 pay-method-card p-3 text-center" onclick="selectPayMethod('card')" id="pmCard" style="cursor:pointer;">
+                <div class="fs-3">💳</div><div class="fw-semibold small">Credit / Debit Card</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card border-2 pay-method-card p-3 text-center" onclick="selectPayMethod('netbanking')" id="pmNetbanking" style="cursor:pointer;">
+                <div class="fs-3">🏦</div><div class="fw-semibold small">Net Banking</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card border-2 pay-method-card p-3 text-center" onclick="selectPayMethod('cod')" id="pmCod" style="cursor:pointer;">
+                <div class="fs-3">💵</div><div class="fw-semibold small">Cash on Delivery</div>
+              </div>
+            </div>
+          </div>
+          <!-- UPI Input -->
+          <div id="upiFields" class="mt-3" style="display:none;">
+            <input type="text" id="upiId" class="form-control" placeholder="Enter UPI ID (e.g. name@paytm)">
+          </div>
+          <!-- Card Input -->
+          <div id="cardFields" class="mt-3" style="display:none;">
+            <div class="mb-2"><input type="text" id="cardNum" class="form-control" placeholder="Card Number (16 digits)" maxlength="19"></div>
+            <div class="row g-2">
+              <div class="col-6"><input type="text" id="cardExp" class="form-control" placeholder="MM/YY"></div>
+              <div class="col-6"><input type="text" id="cardCvv" class="form-control" placeholder="CVV"></div>
+            </div>
+          </div>
+          <!-- Net Banking -->
+          <div id="netbankFields" class="mt-3" style="display:none;">
+            <select class="form-select" id="bankSelect">
+              <option>Select Bank</option>
+              <option>SBI - State Bank of India</option>
+              <option>HDFC Bank</option>
+              <option>ICICI Bank</option>
+              <option>Punjab National Bank</option>
+              <option>Bank of Baroda</option>
+              <option>Axis Bank</option>
+              <option>Canara Bank</option>
+            </select>
+          </div>
+          <!-- COD -->
+          <div id="codFields" class="mt-3" style="display:none;">
+            <div class="alert alert-warning">💵 Pay cash when your order is delivered. Our delivery partner will collect the payment.</div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button class="btn btn-secondary flex-fill" onclick="showPayStep(1)">← Back</button>
+            <button class="btn btn-success flex-fill fw-bold" id="confirmPayBtn" onclick="processPayment()" disabled>Pay Now</button>
+          </div>
+        </div>
+        <!-- Step 3: Processing -->
+        <div class="payment-step" id="payStep3">
+          <div class="text-center py-5">
+            <div class="spinner mb-3"></div>
+            <h5>Processing Payment...</h5>
+            <p class="text-muted">Please wait, do not close this window</p>
+          </div>
+        </div>
+        <!-- Step 4: Success -->
+        <div class="payment-step" id="payStep4">
+          <div class="text-center py-4">
+            <div class="fs-1 mb-3">🎉</div>
+            <h4 class="text-success fw-bold">Order Placed Successfully!</h4>
+            <p class="text-muted">Your order has been confirmed. You can track it in My Account section.</p>
+            <div class="alert alert-success"><strong>Order ID:</strong> <span id="successOrderId"></span></div>
+            <button class="btn btn-success px-5" onclick="hideModal('paymentModal');loadMyOrders();loadCart()">View My Orders</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRACKING MODAL -->
+<div class="modal fade" id="trackingModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">📍 Order Tracking</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="map-container mb-3" style="height:220px;"><div id="trackingMap" style="height:100%;border-radius:8px;"></div></div>
+        <div class="tracking-steps mb-4" id="trackingSteps"></div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <small class="text-muted">📍 Current Location: <strong id="trackLocation"></strong></small><br>
+            <small class="text-muted">🕐 Updated: <strong id="trackUpdated"></strong></small>
+          </div>
+          <div class="col-md-6 text-end">
+            <small class="text-muted">🚚 Est. Delivery: <strong id="trackDelivery"></strong></small><br>
+            <small class="text-muted">💳 Payment: <strong id="trackPayment"></strong></small>
+          </div>
+        </div>
+        <div id="rateOrderBtn" style="display:none;" class="text-center mt-3">
+          <button class="btn btn-warning" onclick="openReviewModal()">⭐ Rate This Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">⭐ Rate & Review</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="reviewProductList"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rating</label>
+          <div class="star-input" id="starInput">
+            <span data-val="1" onclick="setReviewStar(1)">★</span>
+            <span data-val="2" onclick="setReviewStar(2)">★</span>
+            <span data-val="3" onclick="setReviewStar(3)">★</span>
+            <span data-val="4" onclick="setReviewStar(4)">★</span>
+            <span data-val="5" onclick="setReviewStar(5)">★</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Comment</label>
+          <textarea id="reviewComment" class="form-control" rows="3" placeholder="Share your experience..."></textarea>
+        </div>
+        <button class="btn btn-warning w-100 fw-bold" onclick="submitReview()">Submit Review</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-success border-light auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">🌾 Login</button>
+          <button class="btn btn-sm btn-outline-light auth-tab" id="tabRegister" onclick="switchAuthTab('register')">🌱 Register</button>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="loginPanel">
+          <div class="alert alert-info small">
+            <strong>Demo:</strong> farmer@agroconnect.com / farmer123 | customer@agroconnect.com / customer123 | admin@agroconnect.com / admin123
+          </div>
+          <form id="loginForm">
+            <div class="mb-3"><input type="email" id="loginEmail" class="form-control" placeholder="Email" required></div>
+            <div class="mb-3"><input type="password" id="loginPassword" class="form-control" placeholder="Password" required></div>
+            <button type="submit" id="loginBtn" class="btn btn-success w-100 fw-bold">Login</button>
+          </form>
+        </div>
+        <div id="regPanel" style="display:none;">
+          <div class="mb-2"><input type="text" id="regName" class="form-control" placeholder="Full Name *"></div>
+          <div class="mb-2"><input type="tel" id="regPhone" class="form-control" placeholder="Phone"></div>
+          <div class="mb-2"><input type="email" id="regEmail" class="form-control" placeholder="Email *"></div>
+          <div class="mb-2"><input type="password" id="regPassword" class="form-control" placeholder="Password (min 6) *"></div>
+          <div class="mb-2">
+            <select id="regRole" class="form-select">
+              <option value="customer">🛒 Customer</option>
+              <option value="farmer">🌾 Farmer</option>
+            </select>
+          </div>
+          <div class="mb-3"><input type="text" id="regLocation" class="form-control" placeholder="Location (City, State)"></div>
+          <button class="btn btn-success w-100 fw-bold" id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+        </div>
+        <div id="otpPanel" style="display:none;">
+          <div class="alert alert-info text-center">Demo OTP: <span id="demoOtp" class="fs-4 fw-bold text-primary"></span></div>
+          <div class="mb-3"><input type="text" id="otpInput" class="form-control form-control-lg text-center" placeholder="Enter 6-digit OTP" maxlength="6"></div>
+          <button class="btn btn-success w-100 fw-bold" id="verifyOtpBtn" onclick="verifyOTP()">Verify OTP</button>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-outline-secondary flex-fill btn-sm" onclick="sendOTP()">Resend</button>
+            <button class="btn btn-outline-secondary flex-fill btn-sm" onclick="switchAuthTab('register')">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHATBOT -->
+<button id="chatbot-btn">🤖</button>
+<div id="chatbot-panel" style="display:none;flex-direction:column;">
+  <div class="chatbot-header">
+    <span>🌾</span>
+    <div><div class="fw-bold small">AgriBot</div><div style="font-size:0.7rem;opacity:0.8;">AgroConnect Assistant</div></div>
+    <button class="btn-close btn-close-white ms-auto" onclick="document.getElementById('chatbot-panel').style.display='none'"></button>
+  </div>
+  <div class="chatbot-messages" id="chatbot-messages"></div>
+  <div class="chatbot-input">
+    <input type="text" id="chatbot-input" placeholder="Ask me anything..." />
+    <button id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/chatbot.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let cartMap = null, cartMarker = null;
+let trackMap = null, trackMarker = null;
+let deliveryLat = 0, deliveryLng = 0, deliveryAddress = '';
+let currentPage = 1, currentFilters = {}, categories = [];
+let couponData = null;
+let selectedPayMethod = null;
+let currentTrackOrder = null;
+let reviewOrderId = null, reviewProductId = null;
+let reviewRating = 5;
+let searchTimer = null;
+
+// ── Load Categories ────────────────────────────────────────────────────────────
+async function loadCategories() {
+  try {
+    categories = await API.get('/api/categories');
+    const el = document.getElementById('categoryFilters');
+    el.innerHTML = `<div class="form-check"><input class="form-check-input" type="radio" name="cat" value="" id="catAll" checked onchange="applyFilters()"><label class="form-check-label" for="catAll">All</label></div>`;
+    categories.forEach(c => {
+      el.innerHTML += `<div class="form-check"><input class="form-check-input" type="radio" name="cat" value="${c.id}" id="cat${c.id}" onchange="applyFilters()"><label class="form-check-label small" for="cat${c.id}">${c.icon} ${c.name}</label></div>`;
+    });
+  } catch(e) { console.error(e); }
+}
+
+// ── Load Products ──────────────────────────────────────────────────────────────
+async function loadProducts(page = 1) {
+  currentPage = page;
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner"></div></div>';
+  const cat = document.querySelector('input[name="cat"]:checked')?.value || '';
+  const search = document.getElementById('searchInput')?.value?.trim() || '';
+  const minPrice = document.getElementById('minPrice')?.value || '';
+  const maxPrice = document.getElementById('maxPrice')?.value || '';
+  const sort = document.getElementById('sortBy')?.value || 'latest';
+  const preHarvest = document.getElementById('preHarvestFilter')?.checked ? true : null;
+  
+  let url = `/api/products/?page=${page}&sort=${sort}`;
+  if (cat) url += `&category=${cat}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (minPrice) url += `&min_price=${minPrice}`;
+  if (maxPrice) url += `&max_price=${maxPrice}`;
+  if (preHarvest) url += `&pre_harvest=true`;
+  
+  try {
+    const data = await API.get(url);
+    if (!data.products?.length) {
+      grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No products found</p></div>';
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+    grid.innerHTML = data.products.map(p => renderProductCard(p)).join('');
+    renderPagination(data.page, data.pages);
+  } catch(e) {
+    grid.innerHTML = '<div class="col-12 text-center text-danger py-3">Failed to load products</div>';
+  }
+}
+
+function renderProductCard(p) {
+  const stars = renderStars(p.avg_rating);
+  return `
+  <div class="col-sm-6 col-md-4 col-xl-3">
+    <div class="product-card card h-100">
+      <div class="position-relative">
+        <img src="${p.image_url}" class="card-img-top" alt="${p.name}" style="height:180px;object-fit:cover;"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format'">
+        ${p.is_pre_harvest ? '<span class="pre-harvest-badge position-absolute" style="top:8px;left:8px;">🌱 Pre-Harvest</span>' : ''}
+        <button class="btn btn-sm position-absolute" style="top:8px;right:8px;background:rgba(255,255,255,0.8);" onclick="toggleWishlist(${p.id},this)">🤍</button>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <h6 class="fw-bold mb-1">${p.name}</h6>
+        <div class="small text-muted mb-1">🌾 ${p.farmer_name || 'Farmer'} ${p.farmer_location ? ' · '+p.farmer_location : ''}</div>
+        <div class="small text-muted mb-1">📦 ${p.quantity} ${p.unit} available</div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="product-price">₹${p.price}/${p.unit}</span>
+          ${p.ai_suggested_price > 0 ? `<small class="text-muted">AI: ₹${p.ai_suggested_price}</small>` : ''}
+        </div>
+        <div class="mb-2">${stars} <small class="text-muted">(${p.review_count})</small></div>
+        <button class="btn btn-green btn-sm mt-auto" onclick="addToCart(${p.id})" data-i18n="product.addcart">Add to Cart</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPagination(page, pages) {
+  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let html = '<nav><ul class="pagination pagination-sm">';
+  html += `<li class="page-item ${page===1?'disabled':''}"><a class="page-link" onclick="loadProducts(${page-1})">«</a></li>`;
+  for (let i = 1; i <= pages; i++) {
+    html += `<li class="page-item ${i===page?'active':''}"><a class="page-link" onclick="loadProducts(${i})">${i}</a></li>`;
+  }
+  html += `<li class="page-item ${page===pages?'disabled':''}"><a class="page-link" onclick="loadProducts(${page+1})">»</a></li>`;
+  html += '</ul></nav>';
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function applyFilters() { loadProducts(1); }
+function resetFilters() {
+  document.querySelectorAll('input[name="cat"]')[0].checked = true;
+  document.getElementById('minPrice').value = '';
+  document.getElementById('maxPrice').value = '';
+  document.getElementById('preHarvestFilter').checked = false;
+  document.getElementById('sortBy').value = 'latest';
+  document.getElementById('searchInput').value = '';
+  loadProducts(1);
+}
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => applyFilters(), 400);
+}
+
+// ── Cart ──────────────────────────────────────────────────────────────────────
+async function loadCart() {
+  const user = Auth.getUser();
+  if (!user) return;
+  try {
+    const items = await API.get('/api/cart');
+    renderCartItems(items);
+    document.querySelectorAll('.cart-badge').forEach(b => b.textContent = items.length);
+  } catch(e) {}
+}
+
+function renderCartItems(items) {
+  const container = document.getElementById('cartItems');
+  const footer = document.getElementById('cartFooter');
+  if (!items || !items.length) {
+    container.innerHTML = '<p class="text-center text-muted py-4" data-i18n="cart.empty">Your cart is empty</p>';
+    footer.style.display = 'none';
+    return;
+  }
+  footer.style.display = 'block';
+  let subtotal = 0;
+  container.innerHTML = items.map(item => {
+    const itemTotal = item.product_price * item.quantity;
+    subtotal += itemTotal;
+    return `
+    <div class="cart-item d-flex gap-2 align-items-center">
+      <img src="${item.product_image}" alt="" onerror="this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80&fit=crop&auto=format'">
+      <div class="flex-grow-1">
+        <div class="fw-semibold small">${item.product_name}</div>
+        <div class="text-muted small">₹${item.product_price}/${item.product_unit}</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateQty(${item.id}, ${item.quantity - 1})">−</button>
+          <span class="small fw-bold">${item.quantity}</span>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateQty(${item.id}, ${item.quantity + 1})">+</button>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="fw-bold text-success">₹${itemTotal.toFixed(0)}</div>
+        <button class="btn btn-sm text-danger p-0 mt-1" onclick="removeCartItem(${item.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+  
+  let discount = 0;
+  let discountRow = document.getElementById('discountRow');
+  if (couponData) {
+    discount = subtotal * couponData.discount_percent / 100;
+    discountRow.style.display = 'flex';
+    document.getElementById('cartDiscount').textContent = `-₹${discount.toFixed(0)}`;
+  } else {
+    discountRow.style.display = 'none';
+  }
+  document.getElementById('cartSubtotal').textContent = `₹${subtotal.toFixed(0)}`;
+  document.getElementById('cartTotal').textContent = `₹${(subtotal - discount).toFixed(0)}`;
+}
+
+async function updateQty(id, qty) {
+  if (qty < 1) { await removeCartItem(id); return; }
+  try {
+    await API.put(`/api/cart/${id}`, { product_id: 0, quantity: qty });
+    loadCart();
+  } catch(e) {}
+}
+async function removeCartItem(id) {
+  try {
+    await API.delete(`/api/cart/${id}`);
+    loadCart();
+    updateCartCount();
+  } catch(e) {}
+}
+
+// ── Delivery / Map ─────────────────────────────────────────────────────────────
+function initCartMap() {
+  if (cartMap) return;
+  const mapDiv = document.getElementById('cartMap');
+  if (!mapDiv) return;
+  cartMap = L.map('cartMap').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OpenStreetMap'}).addTo(cartMap);
+  cartMap.on('click', async (e) => {
+    deliveryLat = e.latlng.lat;
+    deliveryLng = e.latlng.lng;
+    if (cartMarker) cartMap.removeLayer(cartMarker);
+    cartMarker = L.marker([deliveryLat, deliveryLng]).addTo(cartMap);
+    deliveryAddress = await reverseGeocode(deliveryLat, deliveryLng);
+    document.getElementById('mapAddress').textContent = '📍 ' + deliveryAddress;
+    showSelectedAddress(deliveryAddress);
+  });
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+    const data = await res.json();
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
+}
+
+function showSelectedAddress(addr) {
+  const box = document.getElementById('selectedAddressBox');
+  box.style.display = 'block';
+  box.textContent = '✅ Delivery: ' + addr;
+}
+
+function switchDelivery(mode) {
+  document.getElementById('mapDelivery').style.display = mode === 'map' ? 'block' : 'none';
+  document.getElementById('textDelivery').style.display = mode === 'text' ? 'block' : 'none';
+  document.getElementById('btnMap').classList.toggle('active', mode === 'map');
+  document.getElementById('btnText').classList.toggle('active', mode === 'text');
+  if (mode === 'map') {
+    setTimeout(initCartMap, 200);
+    setTimeout(() => cartMap?.invalidateSize(), 300);
+  }
+}
+
+async function useGPS() {
+  if (!navigator.geolocation) { showToast('GPS not available', 'error'); return; }
+  showToast('Getting your location...', 'info');
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    deliveryLat = pos.coords.latitude;
+    deliveryLng = pos.coords.longitude;
+    if (!cartMap) { switchDelivery('map'); await new Promise(r => setTimeout(r, 400)); }
+    cartMap.setView([deliveryLat, deliveryLng], 14);
+    if (cartMarker) cartMap.removeLayer(cartMarker);
+    cartMarker = L.marker([deliveryLat, deliveryLng]).addTo(cartMap);
+    deliveryAddress = await reverseGeocode(deliveryLat, deliveryLng);
+    document.getElementById('mapAddress').textContent = '📍 ' + deliveryAddress;
+    showSelectedAddress(deliveryAddress);
+    showToast('Location set!');
+  }, () => showToast('Could not get GPS location', 'error'));
+}
+
+// ── Coupon ────────────────────────────────────────────────────────────────────
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  if (!code) return;
+  try {
+    const res = await API.post('/api/coupon/validate', { code });
+    couponData = res;
+    document.getElementById('couponMsg').innerHTML = `<span class="text-success">✅ ${res.message}</span>`;
+    document.getElementById('removeCouponBtn').style.display = 'inline-block';
+    loadCart();
+  } catch(e) {
+    document.getElementById('couponMsg').innerHTML = `<span class="text-danger">❌ ${e.message}</span>`;
+    couponData = null;
+  }
+}
+function removeCoupon() {
+  couponData = null;
+  document.getElementById('couponInput').value = '';
+  document.getElementById('couponMsg').textContent = '';
+  document.getElementById('removeCouponBtn').style.display = 'none';
+  loadCart();
+}
+
+// ── Payment ───────────────────────────────────────────────────────────────────
+async function proceedToPayment() {
+  const user = Auth.getUser();
+  if (!user) { showModal('loginModal'); return; }
+  
+  const textMode = document.getElementById('textDelivery').style.display !== 'none';
+  if (textMode) {
+    deliveryAddress = document.getElementById('textAddress').value.trim();
+    deliveryLat = 0; deliveryLng = 0;
+  }
+  if (!deliveryAddress) { showToast('Please set a delivery location first!', 'warning'); return; }
+  
+  try {
+    const items = await API.get('/api/cart');
+    if (!items.length) { showToast('Cart is empty', 'error'); return; }
+    
+    let subtotal = items.reduce((sum, i) => sum + i.product_price * i.quantity, 0);
+    let discount = couponData ? subtotal * couponData.discount_percent / 100 : 0;
+    let total = subtotal - discount;
+    
+    let sumHtml = '<table class="table table-sm"><thead><tr><th>Product</th><th>Qty</th><th>Price</th></tr></thead><tbody>';
+    items.forEach(i => {
+      sumHtml += `<tr><td>${i.product_name}</td><td>${i.quantity}</td><td>₹${(i.product_price * i.quantity).toFixed(0)}</td></tr>`;
+    });
+    sumHtml += '</tbody></table>';
+    if (couponData) sumHtml += `<div class="d-flex justify-content-between text-success"><span>Discount (${couponData.code}):</span><span>-₹${discount.toFixed(0)}</span></div>`;
+    document.getElementById('orderSummary').innerHTML = sumHtml;
+    document.getElementById('summaryAddress').textContent = deliveryAddress;
+    document.getElementById('summaryTotal').textContent = `₹${total.toFixed(0)}`;
+    const days = new Date(); days.setDate(days.getDate() + 3);
+    document.getElementById('summaryDelivery').textContent = days.toDateString();
+    
+    showPayStep(1);
+    showModal('paymentModal');
+  } catch(e) { showToast('Error loading cart', 'error'); }
+}
+
+function showPayStep(n) {
+  document.querySelectorAll('.payment-step').forEach(el => el.classList.remove('active'));
+  const step = document.getElementById(`payStep${n}`);
+  if (step) step.classList.add('active');
+}
+
+function selectPayMethod(method) {
+  selectedPayMethod = method;
+  document.querySelectorAll('.pay-method-card').forEach(c => c.classList.remove('border-success'));
+  document.getElementById(`pm${method.charAt(0).toUpperCase()}${method.slice(1)}`)?.classList.add('border-success');
+  document.getElementById('upiFields').style.display = method === 'upi' ? 'block' : 'none';
+  document.getElementById('cardFields').style.display = method === 'card' ? 'block' : 'none';
+  document.getElementById('netbankFields').style.display = method === 'netbanking' ? 'block' : 'none';
+  document.getElementById('codFields').style.display = method === 'cod' ? 'block' : 'none';
+  document.getElementById('confirmPayBtn').disabled = false;
+  document.getElementById('confirmPayBtn').textContent = method === 'cod' ? 'Confirm Order' : 'Pay Now';
+}
+
+async function processPayment() {
+  if (!selectedPayMethod) { showToast('Select payment method', 'warning'); return; }
+  showPayStep(3);
+  
+  setTimeout(async () => {
+    try {
+      const items = await API.get('/api/cart');
+      let subtotal = items.reduce((sum, i) => sum + i.product_price * i.quantity, 0);
+      let discount = couponData ? subtotal * couponData.discount_percent / 100 : 0;
+      const payId = 'PAY_' + Date.now();
+      
+      const orderData = {
+        items: items.map(i => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          price_at_purchase: i.product_price
+        })),
+        total_amount: subtotal - discount,
+        discount_amount: discount,
+        coupon_code: couponData?.code || '',
+        payment_method: selectedPayMethod,
+        payment_id: payId,
+        delivery_address: deliveryAddress,
+        delivery_lat: deliveryLat,
+        delivery_lng: deliveryLng
+      };
+      
+      const order = await API.post('/api/orders/', orderData);
+      await API.delete('/api/cart'); // Clear cart
+      
+      document.getElementById('successOrderId').textContent = '#' + order.id;
+      showPayStep(4);
+      updateCartCount();
+      couponData = null;
+      deliveryAddress = ''; deliveryLat = 0; deliveryLng = 0;
+      if (cartMarker && cartMap) { cartMap.removeLayer(cartMarker); cartMarker = null; }
+      document.getElementById('selectedAddressBox').style.display = 'none';
+      document.getElementById('mapAddress').textContent = '';
+    } catch(e) {
+      showToast('Order failed: ' + e.message, 'error');
+      showPayStep(2);
+    }
+  }, 1500);
+}
+
+function cancelPayment() {
+  hideModal('paymentModal');
+  selectedPayMethod = null;
+}
+
+// ── My Account ────────────────────────────────────────────────────────────────
+function loadProfileData() {
+  const user = Auth.getUser();
+  if (!user) return;
+  document.getElementById('profName').value = user.name || '';
+  document.getElementById('profEmail').value = user.email || '';
+  document.getElementById('profPhone').value = user.phone || '';
+  document.getElementById('profLocation').value = user.location || '';
+  if (user.profile_image) document.getElementById('profileImg').src = user.profile_image;
+}
+
+async function saveProfile() {
+  try {
+    const data = {
+      name: document.getElementById('profName').value,
+      phone: document.getElementById('profPhone').value,
+      location: document.getElementById('profLocation').value,
+    };
+    const res = await API.put('/api/auth/profile', data);
+    Auth.setAuth(Auth.getToken(), res);
+    updateNavAuth();
+    showToast('Profile saved!');
+  } catch(e) { showToast('Error saving: ' + e.message, 'error'); }
+}
+
+async function loadMyOrders() {
+  const user = Auth.getUser();
+  if (!user || user.role !== 'customer') return;
+  try {
+    const orders = await API.get('/api/orders/my-orders');
+    const el = document.getElementById('myOrdersList');
+    if (!orders.length) { el.innerHTML = '<p class="text-center text-muted py-3">No orders yet. <a href="/marketplace">Start shopping!</a></p>'; return; }
+    
+    el.innerHTML = orders.map(o => {
+      const statusColors = { confirmed: 'primary', shipped: 'info', out_for_delivery: 'warning', delivered: 'success', cancelled: 'danger', pending: 'secondary' };
+      const sc = statusColors[o.status] || 'secondary';
+      return `
+      <div class="border rounded p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <strong>#${o.id}</strong> <span class="badge bg-${sc} ms-2">${o.status.replace(/_/g,' ').toUpperCase()}</span>
+            <div class="small text-muted">${new Date(o.created_at).toLocaleDateString()}</div>
+          </div>
+          <div class="text-end">
+            <strong>₹${o.total_amount.toFixed(0)}</strong>
+            ${o.discount_amount > 0 ? `<div class="small text-success">Saved ₹${o.discount_amount.toFixed(0)}</div>` : ''}
+            ${o.coupon_code ? `<div class="small text-muted">Coupon: ${o.coupon_code}</div>` : ''}
+          </div>
+        </div>
+        <div class="small text-muted mb-2">
+          ${o.items.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-success btn-sm" onclick="openTracking(${o.id})">📍 Track</button>
+          ${o.status === 'delivered' ? `<button class="btn btn-warning btn-sm" onclick="openReviewModal(${o.id}, ${o.items[0]?.product_id})">⭐ Rate</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    
+    // Auto-prompt reviews for delivered orders
+    orders.filter(o => o.status === 'delivered' && !o.review_prompted).forEach(async o => {
+      await API.post(`/api/orders/${o.id}/prompt-review`, {}).catch(() => {});
+    });
+  } catch(e) { console.error(e); }
+}
+
+// ── Tracking ──────────────────────────────────────────────────────────────────
+async function openTracking(orderId) {
+  currentTrackOrder = orderId;
+  try {
+    const data = await API.get(`/api/orders/${orderId}/tracking`);
+    renderTracking(data);
+    showModal('trackingModal');
+    setTimeout(() => {
+      if (!trackMap) {
+        const lat = data.delivery_lat || 20.5937;
+        const lng = data.delivery_lng || 78.9629;
+        trackMap = L.map('trackingMap').setView([lat, lng], data.delivery_lat ? 12 : 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OpenStreetMap'}).addTo(trackMap);
+        if (data.delivery_lat) {
+          trackMarker = L.marker([lat, lng]).addTo(trackMap).bindPopup('Delivery Location').openPopup();
+        }
+      } else {
+        if (data.delivery_lat) { trackMap.setView([data.delivery_lat, data.delivery_lng], 12); }
+        trackMap.invalidateSize();
+      }
+    }, 300);
+  } catch(e) { showToast('Failed to load tracking', 'error'); }
+}
+
+function renderTracking(data) {
+  const steps = data.steps || [];
+  const stepsEl = document.getElementById('trackingSteps');
+  stepsEl.innerHTML = steps.map((s, i) => `
+    <div class="tracking-step">
+      <div class="step-circle ${s.done ? (i === data.current_step ? 'active' : 'done') : ''}">${s.done ? '✓' : i + 1}</div>
+      <div class="step-label">${s.label}</div>
+    </div>`).join('');
+  document.getElementById('trackLocation').textContent = data.tracking_location || 'Warehouse';
+  document.getElementById('trackUpdated').textContent = data.tracking_updated_at ? new Date(data.tracking_updated_at).toLocaleString() : '-';
+  document.getElementById('trackDelivery').textContent = data.estimated_delivery || '-';
+  document.getElementById('trackPayment').textContent = `${data.payment_method?.toUpperCase()} · ${data.payment_verified ? '✅ Verified' : '⏳ Pending'}`;
+  document.getElementById('rateOrderBtn').style.display = data.status === 'delivered' ? 'block' : 'none';
+}
+
+// ── Review ────────────────────────────────────────────────────────────────────
+function openReviewModal(orderId, productId) {
+  reviewOrderId = orderId;
+  reviewProductId = productId;
+  reviewRating = 5;
+  setReviewStar(5);
+  showModal('reviewModal');
+}
+function setReviewStar(val) {
+  reviewRating = val;
+  document.querySelectorAll('.star-input span').forEach((s, i) => {
+    s.classList.toggle('active', i < val);
+    s.style.color = i < val ? '#ffc107' : '#ddd';
+  });
+}
+async function submitReview() {
+  if (!reviewOrderId || !reviewProductId) return;
+  const comment = document.getElementById('reviewComment').value;
+  try {
+    await API.post('/api/reviews', { product_id: reviewProductId, order_id: reviewOrderId, rating: reviewRating, comment });
+    showToast('Review submitted! Thank you ⭐');
+    hideModal('reviewModal');
+    hideModal('trackingModal');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ── Support ───────────────────────────────────────────────────────────────────
+function toggleSupport() {
+  const el = document.getElementById('supportChat');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') loadSupportMessages();
+}
+async function loadSupportMessages() {
+  const user = Auth.getUser();
+  if (!user) { showToast('Login to use support', 'warning'); return; }
+  try {
+    const msgs = await API.get('/api/support/my-messages');
+    const el = document.getElementById('supportMessages');
+    if (!msgs.length) { el.innerHTML = '<p class="text-muted text-center small">No messages yet</p>'; return; }
+    el.innerHTML = msgs.map(m => `
+      <div class="d-flex ${m.is_admin_reply ? '' : 'justify-content-end'} mb-2">
+        <div class="p-2 rounded small" style="max-width:75%;background:${m.is_admin_reply ? '#f0f0f0' : '#d4edda'}">
+          <strong>${m.is_admin_reply ? '🛡 Support' : '👤 You'}:</strong> ${m.message}
+          <div class="text-muted" style="font-size:0.65rem;">${new Date(m.created_at).toLocaleString()}</div>
+        </div>
+      </div>`).join('');
+    el.scrollTop = el.scrollHeight;
+  } catch(e) {}
+}
+async function sendSupport() {
+  const user = Auth.getUser();
+  if (!user) { showModal('loginModal'); return; }
+  const msg = document.getElementById('supportInput').value.trim();
+  if (!msg) return;
+  try {
+    await API.post('/api/support/send', { message: msg });
+    document.getElementById('supportInput').value = '';
+    loadSupportMessages();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadCategories();
+  loadProducts(1);
+  
+  const user = Auth.getUser();
+  if (user && user.role === 'customer') {
+    document.getElementById('myAccountSection').style.display = 'block';
+    loadProfileData();
+    loadMyOrders();
+  }
+  
+  loadCart();
+  
+  // Init map when cart opens
+  document.getElementById('cartPanel').addEventListener('show.bs.offcanvas', () => {
+    loadCart();
+    setTimeout(() => { switchDelivery('map'); }, 300);
+  });
+  
+  // Enter key for search
+  document.getElementById('searchInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') applyFilters();
+  });
+  
+  // Auto-refresh tracking
+  setInterval(() => {
+    if (currentTrackOrder && document.getElementById('trackingModal').classList.contains('show')) {
+      API.get(`/api/orders/${currentTrackOrder}/tracking`).then(renderTracking).catch(() => {});
+    }
+  }, 30000);
+});
+</script>
+</body>
+</html>

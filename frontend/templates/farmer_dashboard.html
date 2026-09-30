@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Farmer Dashboard — AgroConnect</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #f8faf8; }
+    .dashboard-wrapper { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; min-width: 240px; background: #1a3a2a; color: #fff;
+      display: flex; flex-direction: column; padding: 0; position: fixed;
+      top: 0; left: 0; height: 100vh; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-brand { padding: 20px 20px 10px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .sidebar-brand .brand-name { font-size: 1.2rem; font-weight: 700; color: #7bc67e; }
+    .sidebar-nav { flex: 1; padding: 10px 0; }
+    .sidebar-nav .nav-item { display: block; }
+    .sidebar-nav .nav-link {
+      color: rgba(255,255,255,.75); padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      transition: all .2s; border-left: 3px solid transparent; cursor: pointer;
+    }
+    .sidebar-nav .nav-link:hover, .sidebar-nav .nav-link.active {
+      color: #fff; background: rgba(255,255,255,.1); border-left-color: #7bc67e;
+    }
+    .sidebar-nav .nav-link .icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .sidebar-footer { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,.1); }
+    .main-content { margin-left: 240px; flex: 1; padding: 30px; }
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid;
+    }
+    .stat-card.green { border-color: #2d6a4f; }
+    .stat-card.blue  { border-color: #0ea5e9; }
+    .stat-card.orange{ border-color: #f77f00; }
+    .stat-card.purple{ border-color: #8b5cf6; }
+    .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; }
+    .stat-card .stat-label { color: #6c757d; font-size: .85rem; }
+    .bank-warning {
+      background: #fff3cd; border: 1px solid #f77f00; border-radius: 10px;
+      padding: 15px 20px; margin-bottom: 20px;
+    }
+    .product-card-farmer {
+      background: #fff; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s;
+    }
+    .product-card-farmer:hover { transform: translateY(-2px); }
+    .product-card-farmer img { width: 100%; height: 160px; object-fit: cover; }
+    .ai-price-box {
+      background: linear-gradient(135deg,#f0fff4,#e8f5e9);
+      border: 1px solid #a8d5b5; border-radius: 10px; padding: 15px;
+      margin-top: 10px;
+    }
+    .ai-price-box .ai-header { color: #2d6a4f; font-weight: 600; font-size: .9rem; }
+    .ai-price-box .ai-value { font-size: 1.4rem; font-weight: 700; color: #1b4332; }
+    .reason-chip {
+      display: inline-block; background: #d1fae5; color: #065f46;
+      padding: 2px 10px; border-radius: 20px; font-size: .78rem; margin: 2px;
+    }
+    .img-preview-box {
+      border: 2px dashed #a8d5b5; border-radius: 10px; padding: 10px;
+      text-align: center; min-height: 120px; position: relative;
+    }
+    .img-preview-box img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; }
+    .confidence-badge {
+      position: absolute; top: 6px; right: 6px; font-size: .7rem;
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .bank-status-badge { font-size: .8rem; padding: 4px 12px; border-radius: 20px; }
+    .orders-table th { background: #f0f9f0; font-weight: 600; }
+    .page-title { font-size: 1.6rem; font-weight: 700; color: #1a3a2a; margin-bottom: 5px; }
+    .page-subtitle { color: #6c757d; margin-bottom: 25px; }
+    @media(max-width:768px) {
+      .sidebar { width: 100%; height: auto; position: relative; }
+      .main-content { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">🌾 AgroConnect</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:2px;">Farmer Portal</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item">
+        <a class="nav-link active" onclick="showSection('overview')">
+          <span class="icon">📊</span> Overview
+        </a>
+      </div>
+      <div class="nav-item">
+        <a class="nav-link" onclick="showSection('my-products')">
+          <span class="icon">🌿</span> My Products
+        </a>
+      </div>
+      <div class="nav-item">
+        <a class="nav-link" onclick="openAddProduct()">
+          <span class="icon">➕</span> Add Product
+        </a>
+      </div>
+      <div class="nav-item">
+        <a class="nav-link" onclick="showSection('orders')">
+          <span class="icon">📦</span> Orders
+        </a>
+      </div>
+      <div class="nav-item">
+        <a class="nav-link" onclick="showSection('analytics')">
+          <span class="icon">📈</span> Analytics
+        </a>
+      </div>
+      <div class="nav-item">
+        <a class="nav-link" onclick="showSection('profile')">
+          <span class="icon">👤</span> Profile
+        </a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div style="width:36px;height:36px;border-radius:50%;background:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:1rem;">🌾</div>
+        <div>
+          <div id="sidebarUserName" style="font-size:.85rem;font-weight:600;color:#fff;">Farmer</div>
+          <div style="font-size:.72rem;color:#7bc67e;">Farmer Account</div>
+        </div>
+      </div>
+      <a href="/" class="btn btn-sm btn-outline-light w-100 mb-2">🏠 Home</a>
+      <button onclick="doLogout()" class="btn btn-sm btn-danger w-100">🚪 Logout</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <div id="section-overview" class="section-panel active">
+      <div class="page-title">Dashboard Overview</div>
+      <div class="page-subtitle">Welcome back! Here's your farm summary.</div>
+
+      <div id="bankWarning" class="bank-warning d-none">
+        <strong>⚠️ Payment Setup Required</strong>
+        <p class="mb-1 mt-1">Add bank details in <a href="#" onclick="showSection('profile')" class="text-warning fw-bold">Profile</a> to receive payments from customers.</p>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card green">
+            <div class="stat-value text-success" id="statRevenue">₹0</div>
+            <div class="stat-label">💰 Total Revenue</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card blue">
+            <div class="stat-value text-primary" id="statOrders">0</div>
+            <div class="stat-label">📦 Total Orders</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card orange">
+            <div class="stat-value text-warning" id="statProducts">0</div>
+            <div class="stat-label">🌿 Active Products</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card purple">
+            <div class="stat-value text-purple" id="statPending">0</div>
+            <div class="stat-label">⏳ Pending Orders</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3 p-4 shadow-sm">
+        <h5 class="fw-bold mb-3">📋 Recent Orders</h5>
+        <div id="recentOrdersTable">
+          <div class="text-center text-muted py-3">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MY PRODUCTS ==================== -->
+    <div id="section-my-products" class="section-panel">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <div class="page-title">My Products</div>
+          <div class="page-subtitle">Manage your listed products</div>
+        </div>
+        <button class="btn btn-success" onclick="openAddProduct()">➕ Add Product</button>
+      </div>
+      <div id="myProductsGrid" class="row g-3">
+        <div class="text-center py-5 text-muted">Loading products...</div>
+      </div>
+    </div>
+
+    <!-- ==================== ORDERS ==================== -->
+    <div id="section-orders" class="section-panel">
+      <div class="page-title">Received Orders</div>
+      <div class="page-subtitle">Manage and update order statuses</div>
+      <div class="bg-white rounded-3 shadow-sm overflow-hidden">
+        <table class="table table-hover mb-0 orders-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Amount</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr><td colspan="7" class="text-center py-4 text-muted">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== ANALYTICS ==================== -->
+    <div id="section-analytics" class="section-panel">
+      <div class="page-title">Analytics</div>
+      <div class="page-subtitle">Your sales performance overview</div>
+      <div class="bg-white rounded-3 p-4 shadow-sm">
+        <h5 class="fw-bold mb-3">📈 Monthly Revenue</h5>
+        <canvas id="revenueChart" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- ==================== PROFILE ==================== -->
+    <div id="section-profile" class="section-panel">
+      <div class="page-title">My Profile</div>
+      <div class="page-subtitle">Update personal info and bank details</div>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="bg-white rounded-3 p-4 shadow-sm">
+            <h5 class="fw-bold mb-3">👤 Personal Information</h5>
+            <div class="text-center mb-3">
+              <div style="width:80px;height:80px;border-radius:50%;background:#e8f5e9;margin:0 auto 10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;" id="profileAvatar">🌾</div>
+              <label class="btn btn-sm btn-outline-secondary" for="profileImageInput">📷 Change Photo</label>
+              <input type="file" id="profileImageInput" class="d-none" accept="image/*" onchange="uploadProfileImage(this)"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Full Name</label>
+              <input type="text" id="profileName" class="form-control"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Phone</label>
+              <input type="text" id="profilePhone" class="form-control"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Location</label>
+              <input type="text" id="profileLocation" class="form-control"/>
+            </div>
+            <button class="btn btn-success w-100" onclick="saveProfile()">💾 Save Profile</button>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="bg-white rounded-3 p-4 shadow-sm">
+            <h5 class="fw-bold mb-3">🏦 Bank Account Details</h5>
+            <div class="mb-2" id="bankStatusBadge">
+              <span class="bank-status-badge bg-warning text-dark">⚠️ No bank account linked</span>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Account Holder Name</label>
+              <input type="text" id="bankHolder" class="form-control" placeholder="As on bank passbook"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Bank Name</label>
+              <input type="text" id="bankName" class="form-control" placeholder="e.g. State Bank of India"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Account Number <span class="text-danger">*</span></label>
+              <input type="text" id="bankAccountNo" class="form-control" placeholder="9 to 18 digits" maxlength="18"/>
+              <div class="invalid-feedback">Account number must be 9–18 digits</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">IFSC Code <span class="text-danger">*</span></label>
+              <input type="text" id="bankIfsc" class="form-control" placeholder="e.g. SBIN0001234" maxlength="11" style="text-transform:uppercase"/>
+              <div class="invalid-feedback">IFSC must be format: XXXX0XXXXXXX (4 letters, 0, 6 alphanum)</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">UPI ID <small class="text-muted">(optional)</small></label>
+              <input type="text" id="bankUpi" class="form-control" placeholder="e.g. name@upi"/>
+            </div>
+            <button class="btn btn-success w-100" onclick="saveBankDetails()">💾 Save Bank Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /dashboard-wrapper -->
+
+<!-- ==================== ADD PRODUCT MODAL ==================== -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold" id="addProductModalTitle">🌿 Add New Product</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editProductId"/>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+            <input type="text" id="prodName" class="form-control" placeholder="e.g. Fresh Tomatoes" oninput="onProductNameInput()"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+            <select id="prodCategory" class="form-select">
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="prodDescription" class="form-control" rows="2" placeholder="Describe your product..."></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Price (₹/unit) <span class="text-danger">*</span></label>
+            <input type="number" id="prodPrice" class="form-control" placeholder="0.00" step="0.01" min="0"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+            <input type="number" id="prodQuantity" class="form-control" placeholder="0" min="0"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Unit</label>
+            <select id="prodUnit" class="form-select">
+              <option value="kg">kg</option>
+              <option value="gram">gram</option>
+              <option value="dozen">dozen</option>
+              <option value="piece">piece</option>
+              <option value="litre">litre</option>
+              <option value="quintal">quintal</option>
+              <option value="bundle">bundle</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Demand Level</label>
+            <select id="prodDemand" class="form-select">
+              <option value="1.0">Normal</option>
+              <option value="1.2">High Demand</option>
+              <option value="1.4">Very High</option>
+              <option value="0.8">Low Demand</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="prodPreHarvest" onchange="toggleHarvestDate()"/>
+              <label class="form-check-label fw-semibold" for="prodPreHarvest">🌱 Pre-Harvest Booking</label>
+            </div>
+          </div>
+          <div class="col-md-6" id="harvestDateBox" style="display:none">
+            <label class="form-label fw-semibold">Harvest Date</label>
+            <input type="date" id="prodHarvestDate" class="form-control"/>
+          </div>
+        </div>
+
+        <!-- AI PRICE BOX -->
+        <div id="aiPriceBox" class="ai-price-box d-none mt-3">
+          <div class="ai-header">🤖 AI Price Suggestion</div>
+          <div class="row align-items-center mt-2">
+            <div class="col-md-6">
+              <div class="ai-value" id="aiSuggestedPrice">—</div>
+              <div style="font-size:.8rem;color:#555;">Suggested price per unit</div>
+              <div class="mt-1" style="font-size:.82rem;color:#555;">
+                Market Rate: <strong id="aiMarketPrice">—</strong> &nbsp;|&nbsp;
+                Range: <strong id="aiPriceRange">—</strong>
+              </div>
+              <div style="font-size:.8rem;color:#555;margin-top:3px;">
+                Location: <strong id="aiLocation">—</strong> &nbsp;|&nbsp;
+                Confidence: <strong id="aiConfidence">—</strong>
+              </div>
+            </div>
+            <div class="col-md-6 text-end">
+              <button class="btn btn-sm btn-success" onclick="useAiPrice()">✅ Use AI Price</button>
+            </div>
+          </div>
+          <div class="mt-2" id="aiReasons"></div>
+          <div class="mt-2 p-2 bg-white rounded" id="aiInsightBox" style="font-size:.82rem;color:#333;display:none;"></div>
+        </div>
+
+        <!-- IMAGE PREVIEW BOX -->
+        <div class="mt-3">
+          <label class="form-label fw-semibold">Product Image</label>
+          <div class="img-preview-box" id="imgPreviewBox">
+            <div id="imgPreviewPlaceholder" class="text-muted pt-3">
+              <div style="font-size:2rem;">🌿</div>
+              <div style="font-size:.85rem;">Image will appear after typing product name</div>
+            </div>
+            <img id="imgPreviewEl" src="" alt="" style="display:none;" onerror="handleImgError()"/>
+            <span id="imgConfidenceBadge" class="confidence-badge" style="display:none;"></span>
+          </div>
+          <input type="hidden" id="prodImageUrl"/>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-sm btn-outline-secondary" id="tryAnotherBtn" onclick="tryAnotherImage()" style="display:none;">🔄 Try Another</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="useCustomUrl()">✏️ Custom URL</button>
+          </div>
+          <input type="url" id="customUrlInput" class="form-control form-control-sm mt-2" placeholder="https://..." style="display:none;" oninput="previewCustomUrl()"/>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success" id="saveProductBtn" onclick="saveProduct()">💾 Save Product</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PRODUCT MODAL (reuses addProductModal logic) -->
+
+<!-- TOAST -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toastEl" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+// ==================== ACCESS GUARD ====================
+(function() {
+  const user = Auth.getUser();
+  if (!user || user.role !== 'farmer') {
+    window.location.href = '/';
+  }
+})();
+
+// ==================== GLOBALS ====================
+let categories = [];
+let myProducts = [];
+let currentAiPrice = null;
+let currentImageUrl = null;
+let imageVariants = [];
+let imageVariantIndex = 0;
+let nameDebounceTimer = null;
+let revenueChart = null;
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('sidebarUserName').textContent = user.name;
+  }
+  await loadCategories();
+  await loadOverview();
+  await checkBankAccount();
+});
+
+// ==================== SECTION NAVIGATION ====================
+function showSection(name) {
+  document.querySelectorAll('.section-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav .nav-link').forEach(el => el.classList.remove('active'));
+  const panel = document.getElementById('section-' + name);
+  if (panel) panel.classList.add('active');
+  // highlight sidebar
+  document.querySelectorAll('.sidebar-nav .nav-link').forEach(el => {
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').includes("'" + name + "'")) {
+      el.classList.add('active');
+    }
+  });
+  if (name === 'my-products') loadMyProducts();
+  if (name === 'orders') loadFarmerOrders();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'profile') loadProfile();
+}
+
+// ==================== OVERVIEW ====================
+async function loadOverview() {
+  try {
+    const data = await API.get('/api/analytics/farmer');
+    document.getElementById('statRevenue').textContent = '₹' + (data.total_revenue || 0).toFixed(0);
+    document.getElementById('statOrders').textContent = data.total_orders || 0;
+    document.getElementById('statProducts').textContent = data.active_products || 0;
+    document.getElementById('statPending').textContent = data.pending_orders || 0;
+
+    // Recent orders
+    const orders = data.recent_orders || [];
+    const tbody = document.getElementById('recentOrdersTable');
+    if (orders.length === 0) {
+      tbody.innerHTML = '<p class="text-muted text-center py-3">No orders yet</p>';
+      return;
+    }
+    let html = '<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+    orders.forEach(o => {
+      const badge = getStatusBadge(o.status);
+      html += `<tr>
+        <td>#${o.id}</td>
+        <td>${o.customer_name || 'Customer'}</td>
+        <td>₹${(o.total_amount||0).toFixed(0)}</td>
+        <td>${badge}</td>
+        <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    tbody.innerHTML = html;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function checkBankAccount() {
+  try {
+    const me = await API.get('/api/auth/me');
+    const hasBankAccount = me.bank_account_no && me.bank_ifsc;
+    const warning = document.getElementById('bankWarning');
+    if (!hasBankAccount) {
+      warning.classList.remove('d-none');
+    }
+  } catch(e) {}
+}
+
+// ==================== CATEGORIES ====================
+async function loadCategories() {
+  try {
+    categories = await API.get('/api/categories');
+    const sel = document.getElementById('prodCategory');
+    categories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.icon + ' ' + c.name;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+// ==================== MY PRODUCTS ====================
+async function loadMyProducts() {
+  const grid = document.getElementById('myProductsGrid');
+  grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">Loading...</div>';
+  try {
+    myProducts = await API.get('/api/products/farmer/my-products');
+    if (myProducts.length === 0) {
+      grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><div style="font-size:3rem;">🌿</div><p>No products yet. Add your first product!</p><button class="btn btn-success" onclick="openAddProduct()">➕ Add Product</button></div>';
+      return;
+    }
+    grid.innerHTML = myProducts.map(p => `
+      <div class="col-sm-6 col-lg-4 col-xl-3">
+        <div class="product-card-farmer">
+          <img src="${p.image_url || ''}" alt="${p.name}"
+            onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format'"/>
+          <div class="p-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <h6 class="fw-bold mb-1">${p.name}</h6>
+              ${p.is_pre_harvest ? '<span class="badge bg-warning text-dark" style="font-size:.65rem;">🌱 Pre-Harvest</span>' : ''}
+            </div>
+            <div class="text-success fw-bold">₹${p.price}/${p.unit}</div>
+            <div style="font-size:.8rem;color:#6c757d;">Qty: ${p.quantity} ${p.unit} | 👁 ${p.views} views</div>
+            <div class="mt-1">
+              <span class="badge ${p.is_available ? 'bg-success' : 'bg-secondary'}">${p.is_available ? 'Available' : 'Unavailable'}</span>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-sm btn-outline-primary flex-fill" onclick="editProduct(${p.id})">✏️ Edit</button>
+              <button class="btn btn-sm btn-outline-danger flex-fill" onclick="deleteProduct(${p.id})">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="col-12 text-center text-danger py-4">Failed to load products</div>';
+  }
+}
+
+// ==================== ADD / EDIT PRODUCT ====================
+function openAddProduct() {
+  document.getElementById('editProductId').value = '';
+  document.getElementById('addProductModalTitle').textContent = '🌿 Add New Product';
+  document.getElementById('saveProductBtn').textContent = '💾 Save Product';
+  document.getElementById('prodName').value = '';
+  document.getElementById('prodCategory').value = '';
+  document.getElementById('prodDescription').value = '';
+  document.getElementById('prodPrice').value = '';
+  document.getElementById('prodQuantity').value = '';
+  document.getElementById('prodUnit').value = 'kg';
+  document.getElementById('prodDemand').value = '1.0';
+  document.getElementById('prodPreHarvest').checked = false;
+  document.getElementById('harvestDateBox').style.display = 'none';
+  document.getElementById('prodHarvestDate').value = '';
+  document.getElementById('aiPriceBox').classList.add('d-none');
+  document.getElementById('imgPreviewEl').style.display = 'none';
+  document.getElementById('imgPreviewPlaceholder').style.display = 'block';
+  document.getElementById('imgConfidenceBadge').style.display = 'none';
+  document.getElementById('tryAnotherBtn').style.display = 'none';
+  document.getElementById('customUrlInput').style.display = 'none';
+  document.getElementById('prodImageUrl').value = '';
+  currentAiPrice = null;
+  currentImageUrl = null;
+  imageVariants = [];
+  imageVariantIndex = 0;
+  showSection('my-products');
+  new bootstrap.Modal(document.getElementById('addProductModal')).show();
+}
+
+async function editProduct(id) {
+  const p = myProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('editProductId').value = id;
+  document.getElementById('addProductModalTitle').textContent = '✏️ Edit Product';
+  document.getElementById('saveProductBtn').textContent = '💾 Update Product';
+  document.getElementById('prodName').value = p.name;
+  document.getElementById('prodCategory').value = p.category_id;
+  document.getElementById('prodDescription').value = p.description || '';
+  document.getElementById('prodPrice').value = p.price;
+  document.getElementById('prodQuantity').value = p.quantity;
+  document.getElementById('prodUnit').value = p.unit;
+  document.getElementById('prodDemand').value = p.demand_factor || '1.0';
+  document.getElementById('prodPreHarvest').checked = p.is_pre_harvest;
+  document.getElementById('harvestDateBox').style.display = p.is_pre_harvest ? 'block' : 'none';
+  if (p.harvest_date) document.getElementById('prodHarvestDate').value = p.harvest_date.split('T')[0];
+  document.getElementById('prodImageUrl').value = p.image_url || '';
+  currentImageUrl = p.image_url;
+  if (p.image_url) {
+    const img = document.getElementById('imgPreviewEl');
+    img.src = p.image_url;
+    img.style.display = 'block';
+    document.getElementById('imgPreviewPlaceholder').style.display = 'none';
+    document.getElementById('tryAnotherBtn').style.display = 'inline-block';
+  }
+  new bootstrap.Modal(document.getElementById('addProductModal')).show();
+}
+
+function toggleHarvestDate() {
+  const checked = document.getElementById('prodPreHarvest').checked;
+  document.getElementById('harvestDateBox').style.display = checked ? 'block' : 'none';
+}
+
+let _aiPriceTimer = null;
+function onProductNameInput() {
+  clearTimeout(_aiPriceTimer);
+  clearTimeout(nameDebounceTimer);
+  _aiPriceTimer = setTimeout(async () => {
+    const name = document.getElementById('prodName').value.trim();
+    if (name.length < 3) return;
+    await Promise.all([fetchAiPrice(name), fetchAutoImage(name)]);
+  }, 600);
+}
+
+async function fetchAiPrice(name) {
+  try {
+    const user = Auth.getUser();
+    const data = await API.post('/api/products/ai-price', {
+      product_name: name,
+      current_price: parseFloat(document.getElementById('prodPrice').value) || 0,
+      quantity: parseFloat(document.getElementById('prodQuantity').value) || 1,
+      demand_factor: parseFloat(document.getElementById('prodDemand').value) || 1.0,
+      is_pre_harvest: document.getElementById('prodPreHarvest').checked,
+      location: user ? user.location : ''
+    });
+    currentAiPrice = data.suggested_price;
+    document.getElementById('aiSuggestedPrice').textContent = '₹' + data.suggested_price.toFixed(2) + '/' + (document.getElementById('prodUnit').value || 'kg');
+    document.getElementById('aiMarketPrice').textContent = '₹' + (data.market_price || 0).toFixed(2);
+    document.getElementById('aiPriceRange').textContent = '₹' + (data.price_range?.low || 0).toFixed(0) + ' – ₹' + (data.price_range?.high || 0).toFixed(0);
+    document.getElementById('aiLocation').textContent = data.location_label || 'India';
+    document.getElementById('aiConfidence').textContent = data.confidence || 'Medium';
+    const reasonsEl = document.getElementById('aiReasons');
+    reasonsEl.innerHTML = (data.reasons || []).map(r => `<span class="reason-chip">${r}</span>`).join('');
+    const insightBox = document.getElementById('aiInsightBox');
+    if (data.insight) {
+      insightBox.textContent = '💡 ' + data.insight;
+      insightBox.style.display = 'block';
+    }
+    document.getElementById('aiPriceBox').classList.remove('d-none');
+  } catch(e) {}
+}
+
+async function fetchAutoImage(name) {
+  try {
+    const data = await API.post('/api/products/auto-image', { name });
+    imageVariants = data.variants || [{ url: data.url, confidence: data.confidence }];
+    imageVariantIndex = 0;
+    showImageVariant();
+  } catch(e) {}
+}
+
+function showImageVariant() {
+  const v = imageVariants[imageVariantIndex];
+  if (!v) return;
+  const img = document.getElementById('imgPreviewEl');
+  const placeholder = document.getElementById('imgPreviewPlaceholder');
+  const badge = document.getElementById('imgConfidenceBadge');
+  img.onload = () => {
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+    document.getElementById('tryAnotherBtn').style.display = imageVariants.length > 1 ? 'inline-block' : 'none';
+  };
+  img.onerror = () => {
+    img.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format';
+  };
+  img.src = v.url;
+  document.getElementById('prodImageUrl').value = v.url;
+  currentImageUrl = v.url;
+  const conf = v.confidence || 'auto';
+  badge.textContent = conf;
+  badge.className = 'confidence-badge badge ' + (conf === 'exact' ? 'bg-success' : conf === 'partial' ? 'bg-warning text-dark' : 'bg-secondary');
+  badge.style.display = 'inline-block';
+}
+
+function handleImgError() {
+  document.getElementById('imgPreviewEl').src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format';
+}
+
+function tryAnotherImage() {
+  if (imageVariants.length > 1) {
+    imageVariantIndex = (imageVariantIndex + 1) % imageVariants.length;
+    showImageVariant();
+  }
+}
+
+function useCustomUrl() {
+  const inp = document.getElementById('customUrlInput');
+  inp.style.display = inp.style.display === 'none' ? 'block' : 'none';
+}
+
+function previewCustomUrl() {
+  const url = document.getElementById('customUrlInput').value.trim();
+  if (!url) return;
+  const img = document.getElementById('imgPreviewEl');
+  img.onload = () => {
+    img.style.display = 'block';
+    document.getElementById('imgPreviewPlaceholder').style.display = 'none';
+  };
+  img.onerror = handleImgError;
+  img.src = url;
+  document.getElementById('prodImageUrl').value = url;
+}
+
+function useAiPrice() {
+  if (currentAiPrice) {
+    document.getElementById('prodPrice').value = currentAiPrice.toFixed(2);
+    showToast('AI price applied: ₹' + currentAiPrice.toFixed(2), 'success');
+  }
+}
+
+async function saveProduct() {
+  // Bank check
+  try {
+    const me = await API.get('/api/auth/me');
+    if (!me.bank_account_no || !me.bank_ifsc) {
+      alert('⚠️ Please add your bank account details in Profile before listing products.');
+      bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+      showSection('profile');
+      return;
+    }
+  } catch(e) {}
+
+  const name = document.getElementById('prodName').value.trim();
+  const category = document.getElementById('prodCategory').value;
+  const price = parseFloat(document.getElementById('prodPrice').value);
+  const quantity = parseFloat(document.getElementById('prodQuantity').value);
+  if (!name || !category || isNaN(price) || isNaN(quantity)) {
+    showToast('Please fill all required fields', 'danger');
+    return;
+  }
+
+  const btn = document.getElementById('saveProductBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const payload = {
+    name,
+    category_id: parseInt(category),
+    description: document.getElementById('prodDescription').value,
+    price,
+    quantity,
+    unit: document.getElementById('prodUnit').value,
+    demand_factor: parseFloat(document.getElementById('prodDemand').value),
+    is_pre_harvest: document.getElementById('prodPreHarvest').checked,
+    harvest_date: document.getElementById('prodHarvestDate').value || null,
+    image_url: document.getElementById('prodImageUrl').value || null
+  };
+
+  try {
+    const editId = document.getElementById('editProductId').value;
+    if (editId) {
+      await API.put('/api/products/' + editId, payload);
+      showToast('Product updated!', 'success');
+    } else {
+      await API.post('/api/products/', payload);
+      showToast('Product listed successfully!', 'success');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+    loadMyProducts();
+    loadOverview();
+  } catch(e) {
+    showToast('Error saving product: ' + (e.message || 'Unknown error'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Save Product';
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product? This cannot be undone.')) return;
+  try {
+    await API.delete('/api/products/' + id);
+    showToast('Product deleted', 'success');
+    loadMyProducts();
+    loadOverview();
+  } catch(e) {
+    showToast('Error deleting product', 'danger');
+  }
+}
+
+// ==================== FARMER ORDERS ====================
+async function loadFarmerOrders() {
+  const tbody = document.getElementById('ordersTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3">Loading...</td></tr>';
+  try {
+    const orders = await API.get('/api/orders/farmer/received');
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No orders received yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = orders.map(o => {
+      const items = (o.items || []).map(i => `${i.product_name} ×${i.quantity}`).join(', ');
+      return `<tr>
+        <td>#${o.id}</td>
+        <td>${o.customer_name || '—'}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${items}</td>
+        <td>₹${(o.total_amount||0).toFixed(0)}</td>
+        <td><span class="badge bg-${o.payment_verified ? 'success' : 'warning text-dark'}">${o.payment_method || '—'}</span></td>
+        <td>${getStatusBadge(o.status)}</td>
+        <td>
+          <select class="form-select form-select-sm" style="min-width:140px;" onchange="updateOrderStatus(${o.id}, this.value)">
+            ${['confirmed','shipped','out_for_delivery','delivered','cancelled'].map(s =>
+              `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.replace(/_/g,' ')}</option>`
+            ).join('')}
+          </select>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">Error loading orders</td></tr>';
+  }
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  try {
+    await API.put('/api/orders/' + orderId + '/status', { status: newStatus });
+    showToast('Order status updated to ' + newStatus.replace(/_/g,' '), 'success');
+    loadFarmerOrders();
+    loadOverview();
+  } catch(e) {
+    showToast('Error updating status', 'danger');
+    loadFarmerOrders();
+  }
+}
+
+// ==================== ANALYTICS ====================
+async function loadAnalytics() {
+  try {
+    const data = await API.get('/api/analytics/farmer');
+    const monthly = data.monthly_revenue || {};
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const revenues = months.map((_, i) => monthly[i + 1] || 0);
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    if (revenueChart) revenueChart.destroy();
+    revenueChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: revenues,
+          backgroundColor: 'rgba(45,106,79,0.7)',
+          borderColor: '#2d6a4f',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v } } }
+      }
+    });
+  } catch(e) {}
+}
+
+// ==================== PROFILE ====================
+async function loadProfile() {
+  try {
+    const me = await API.get('/api/auth/me');
+    document.getElementById('profileName').value = me.name || '';
+    document.getElementById('profilePhone').value = me.phone || '';
+    document.getElementById('profileLocation').value = me.location || '';
+    document.getElementById('bankHolder').value = me.bank_holder_name || '';
+    document.getElementById('bankName').value = me.bank_name || '';
+    document.getElementById('bankAccountNo').value = me.bank_account_no || '';
+    document.getElementById('bankIfsc').value = me.bank_ifsc || '';
+    document.getElementById('bankUpi').value = me.upi_id || '';
+    if (me.profile_image) {
+      const avatar = document.getElementById('profileAvatar');
+      avatar.innerHTML = `<img src="${me.profile_image}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;"/>`;
+    }
+    const hasBankAccount = me.bank_account_no && me.bank_ifsc;
+    document.getElementById('bankStatusBadge').innerHTML = hasBankAccount
+      ? '<span class="bank-status-badge bg-success text-white">✅ Bank Account Linked</span>'
+      : '<span class="bank-status-badge bg-warning text-dark">⚠️ No bank account — add to receive payments</span>';
+  } catch(e) {}
+}
+
+async function saveProfile() {
+  const payload = {
+    name: document.getElementById('profileName').value.trim(),
+    phone: document.getElementById('profilePhone').value.trim(),
+    location: document.getElementById('profileLocation').value.trim()
+  };
+  try {
+    await API.put('/api/auth/profile', payload);
+    const user = Auth.getUser();
+    if (user) {
+      user.name = payload.name;
+      localStorage.setItem('agro_user', JSON.stringify(user));
+      document.getElementById('sidebarUserName').textContent = payload.name;
+    }
+    showToast('Profile updated!', 'success');
+  } catch(e) {
+    showToast('Error saving profile', 'danger');
+  }
+}
+
+async function saveBankDetails() {
+  const accountNo = document.getElementById('bankAccountNo').value.trim();
+  const ifsc = document.getElementById('bankIfsc').value.trim().toUpperCase();
+
+  // Validate account number
+  if (accountNo && !/^\d{9,18}$/.test(accountNo)) {
+    document.getElementById('bankAccountNo').classList.add('is-invalid');
+    showToast('Account number must be 9–18 digits', 'danger');
+    return;
+  }
+  document.getElementById('bankAccountNo').classList.remove('is-invalid');
+
+  // Validate IFSC
+  if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+    document.getElementById('bankIfsc').classList.add('is-invalid');
+    showToast('Invalid IFSC format (e.g. SBIN0001234)', 'danger');
+    return;
+  }
+  document.getElementById('bankIfsc').classList.remove('is-invalid');
+
+  const payload = {
+    bank_holder_name: document.getElementById('bankHolder').value.trim(),
+    bank_name: document.getElementById('bankName').value.trim(),
+    bank_account_no: accountNo,
+    bank_ifsc: ifsc,
+    upi_id: document.getElementById('bankUpi').value.trim()
+  };
+  try {
+    await API.put('/api/auth/profile', payload);
+    showToast('Bank details saved!', 'success');
+    loadProfile();
+    checkBankAccount();
+    loadOverview();
+  } catch(e) {
+    showToast('Error saving bank details', 'danger');
+  }
+}
+
+async function uploadProfileImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch('/api/auth/upload-profile-image', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + Auth.getToken() },
+      body: formData
+    });
+    const data = await res.json();
+    if (data.profile_image) {
+      document.getElementById('profileAvatar').innerHTML = `<img src="${data.profile_image}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;"/>`;
+      showToast('Profile photo updated!', 'success');
+    }
+  } catch(e) {
+    showToast('Error uploading image', 'danger');
+  }
+}
+
+// ==================== HELPERS ====================
+function getStatusBadge(status) {
+  const map = {
+    pending: 'bg-secondary',
+    confirmed: 'bg-primary',
+    shipped: 'bg-info',
+    out_for_delivery: 'bg-warning text-dark',
+    delivered: 'bg-success',
+    cancelled: 'bg-danger'
+  };
+  const cls = map[status] || 'bg-secondary';
+  return `<span class="badge ${cls}">${(status||'').replace(/_/g,' ')}</span>`;
+}
+
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toastEl');
+  const msgEl = document.getElementById('toastMsg');
+  el.className = `toast align-items-center text-white border-0 bg-${type}`;
+  msgEl.textContent = msg;
+  new bootstrap.Toast(el, { delay: 3000 }).show();
+}
+
+function doLogout() {
+  Auth.clear();
+  window.location.href = '/';
+}
+</script>
+</body>
+</html>

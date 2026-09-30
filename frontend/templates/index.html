@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroConnect - Farm Fresh, Direct to You</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&display=swap" rel="stylesheet">
+<link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=100&q=80&fit=crop&auto=format" alt="Logo" onerror="this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80'">
+      AgroConnect
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="/" data-i18n="nav.home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/marketplace" data-i18n="nav.marketplace">Marketplace</a></li>
+        <li class="nav-item"><a class="nav-link nav-dashboard" href="#" data-i18n="nav.dashboard">📊 Dashboard</a></li>
+      </ul>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div>
+          <button class="lang-btn" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="hi">हि</button>
+          <button class="lang-btn" data-lang="ta">த</button>
+          <button class="lang-btn" data-lang="te">తె</button>
+        </div>
+        <button class="btn btn-sm btn-warning cart-btn" onclick="window.location='/marketplace'">
+          🛒 <span class="cart-badge">0</span>
+        </button>
+        <button class="btn btn-sm btn-light nav-login" onclick="showModal('loginModal')" data-i18n="nav.login">🔐 Login / Register</button>
+        <div class="nav-logout d-none align-items-center gap-2">
+          <span class="badge bg-light text-success nav-user-name fw-bold"></span>
+          <span class="badge bg-warning text-dark nav-role-badge" style="font-size:0.65rem;"></span>
+          <button class="btn btn-sm btn-outline-light btn-logout" data-i18n="nav.logout">Logout</button>
+        </div>
+      </div> 
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-7 hero-content">
+        <h1 class="hero-title" data-i18n="hero.title">Farm Fresh, Direct to Your Door</h1>
+        <p class="hero-subtitle mt-3" data-i18n="hero.subtitle">Connect directly with farmers. Get the freshest produce at the best prices.</p>
+        <div class="mt-4 d-flex gap-3 flex-wrap">
+          <a href="/marketplace" class="btn btn-warning btn-lg px-4 fw-bold" data-i18n="hero.shop">🛒 Shop Now</a>
+          <button class="btn btn-outline-light btn-lg px-4" onclick="showModal('loginModal')" data-i18n="hero.sell">🌾 Sell Harvest</button>
+        </div>
+        <div class="mt-4 d-flex gap-4 flex-wrap">
+          <div class="text-white"><div class="fw-bold fs-4">500+</div><small data-i18n="stat.farmers">Farmers</small></div>
+          <div class="text-white"><div class="fw-bold fs-4">2K+</div><small data-i18n="stat.customers">Customers</small></div>
+          <div class="text-white"><div class="fw-bold fs-4">50+</div><small data-i18n="stat.products">Products</small></div>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-block text-center">
+        <img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=500&q=80&fit=crop&auto=format" alt="Farm" class="img-fluid rounded-4 shadow-lg" style="max-height:380px;object-fit:cover;">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <h2 class="section-title text-center mb-5">Why Choose AgroConnect?</h2>
+    <div class="row g-4">
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">🤖</div>
+        <h6 class="fw-bold" data-i18n="feat.ai">AI Pricing</h6>
+        <p class="small text-muted">Smart market-based price suggestions</p>
+      </div>
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">🌱</div>
+        <h6 class="fw-bold" data-i18n="feat.pre">Pre-Harvest</h6>
+        <p class="small text-muted">Book crops before harvest</p>
+      </div>
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">🔒</div>
+        <h6 class="fw-bold" data-i18n="feat.pay">Secure Pay</h6>
+        <p class="small text-muted">UPI, Card, NetBanking, COD</p>
+      </div>
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">📱</div>
+        <h6 class="fw-bold" data-i18n="feat.otp">OTP Verify</h6>
+        <p class="small text-muted">Secure OTP-based registration</p>
+      </div>
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">🌐</div>
+        <h6 class="fw-bold" data-i18n="feat.multi">Multilingual</h6>
+        <p class="small text-muted">English, Hindi, Tamil, Telugu</p>
+      </div>
+      <div class="col-md-4 col-lg-2 text-center">
+        <div class="feature-icon">🤝</div>
+        <h6 class="fw-bold" data-i18n="feat.direct">Direct Trade</h6>
+        <p class="small text-muted">No middlemen, fair prices</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED PRODUCTS -->
+<section class="py-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="section-title">Featured Products</h2>
+      <a href="/marketplace" class="btn btn-outline-success" data-i18n="product.viewall">View All</a>
+    </div>
+    <div class="row g-4" id="featuredProducts">
+      <div class="col-12 text-center py-4"><div class="spinner"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <h2 class="section-title text-center mb-5">How It Works</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <h5>Browse & Add to Cart</h5>
+          <p class="text-muted">Explore fresh produce from verified farmers. Filter by category, price, and season.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <h5>Choose Delivery & Pay</h5>
+          <p class="text-muted">Pin your location on the map, apply coupons, and pay securely via UPI, Card, or COD.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <h5>Track & Receive</h5>
+          <p class="text-muted">Track your order in real-time on the map. Rate your experience after delivery.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-dark text-white py-5 mt-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h5 class="fw-bold">🌾 AgroConnect</h5>
+        <p class="text-muted small">Connecting farmers directly with consumers for a fairer food system.</p>
+        <div>
+          <button class="lang-btn" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="hi">हि</button>
+          <button class="lang-btn" data-lang="ta">த</button>
+          <button class="lang-btn" data-lang="te">తె</button>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6>Quick Links</h6>
+        <ul class="list-unstyled">
+          <li><a href="/" class="text-muted text-decoration-none">Home</a></li>
+          <li><a href="/marketplace" class="text-muted text-decoration-none">Marketplace</a></li>
+          <li><a href="/farmer-dashboard" class="text-muted text-decoration-none">Farmer Dashboard</a></li>
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <h6>Demo Accounts</h6>
+        <p class="text-muted small">
+          🌾 farmer@agroconnect.com / farmer123<br>
+          🛒 customer@agroconnect.com / customer123<br>
+          ⚙️ admin@agroconnect.com / admin123
+        </p>
+      </div>
+    </div>
+    <hr class="border-secondary">
+    <p class="text-center text-muted small">© 2024 AgroConnect. Made with ❤️ for Indian Farmers</p>
+  </div>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-success border-light auth-tab" id="tabLogin" onclick="switchAuthTab('login')" data-i18n="login.title">🌾 Login</button>
+          <button class="btn btn-sm btn-outline-light auth-tab" id="tabRegister" onclick="switchAuthTab('register')" data-i18n="register.title">🌱 Register</button>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <!-- Login Panel -->
+        <div id="loginPanel">
+          <div class="alert alert-info small">
+            <strong>Demo Accounts:</strong><br>
+            🌾 farmer@agroconnect.com / farmer123<br>
+            🛒 customer@agroconnect.com / customer123<br>
+            ⚙️ admin@agroconnect.com / admin123<br>
+            <em class="text-muted">After login → click Dashboard in navbar</em>
+          </div>
+          <form id="loginForm">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Email</label>
+              <input type="email" id="loginEmail" class="form-control" placeholder="your@email.com" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Password</label>
+              <input type="password" id="loginPassword" class="form-control" placeholder="Password" required>
+            </div>
+            <button type="submit" id="loginBtn" class="btn btn-success w-100 fw-bold">Login</button>
+          </form>
+        </div>
+        <!-- Register Panel -->
+        <div id="regPanel" style="display:none;">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Full Name *</label>
+            <input type="text" id="regName" class="form-control" placeholder="Your full name">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Phone</label>
+            <input type="tel" id="regPhone" class="form-control" placeholder="+91 XXXXXXXXXX">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email *</label>
+            <input type="email" id="regEmail" class="form-control" placeholder="your@email.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Password * (min 6 chars)</label>
+            <input type="password" id="regPassword" class="form-control" placeholder="Password">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Role *</label>
+            <select id="regRole" class="form-select">
+              <option value="customer">🛒 Customer</option>
+              <option value="farmer">🌾 Farmer</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Location</label>
+            <input type="text" id="regLocation" class="form-control" placeholder="City, State">
+          </div>
+          <button class="btn btn-success w-100 fw-bold" id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+        </div>
+        <!-- OTP Panel -->
+        <div id="otpPanel" style="display:none;">
+          <div class="alert alert-info text-center">
+            <strong>Demo OTP:</strong> <span id="demoOtp" class="fs-4 fw-bold text-primary">------</span>
+          </div>
+          <p class="text-muted small text-center" data-i18n="otp.title">Enter the 6-digit OTP sent to your email</p>
+          <div class="mb-3">
+            <input type="text" id="otpInput" class="form-control form-control-lg text-center" placeholder="Enter 6-digit OTP" maxlength="6">
+          </div>
+          <button class="btn btn-success w-100 fw-bold" id="verifyOtpBtn" onclick="verifyOTP()">Verify OTP</button>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-outline-secondary flex-fill btn-sm" onclick="sendOTP()">Resend OTP</button>
+            <button class="btn btn-outline-secondary flex-fill btn-sm" onclick="document.getElementById('otpPanel').style.display='none';document.getElementById('regPanel').style.display='block'">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHATBOT -->
+<button id="chatbot-btn" title="AgriBot - AI Assistant">🤖</button>
+<div id="chatbot-panel" style="display:none;flex-direction:column;">
+  <div class="chatbot-header">
+    <span>🌾</span>
+    <div>
+      <div class="fw-bold small">AgriBot</div>
+      <div style="font-size:0.7rem;opacity:0.8;">AgroConnect Assistant</div>
+    </div>
+    <button class="btn-close btn-close-white ms-auto" onclick="document.getElementById('chatbot-panel').style.display='none'"></button>
+  </div>
+  <div class="chatbot-messages" id="chatbot-messages"></div>
+  <div class="chatbot-input">
+    <input type="text" id="chatbot-input" placeholder="Ask me anything..." />
+    <button id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/chatbot.js"></script>
+<script>
+async function loadFeatured() {
+  try {
+    const data = await API.get('/api/products/?limit=6&sort=popular');
+    const grid = document.getElementById('featuredProducts');
+    if (!data.products?.length) { grid.innerHTML = '<p class="text-center text-muted">No products yet</p>'; return; }
+    grid.innerHTML = data.products.map(p => `
+      <div class="col-sm-6 col-md-4 col-lg-2">
+        <div class="product-card card h-100">
+          <img src="${p.image_url}" class="card-img-top" alt="${p.name}"
+            onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format'">
+          <div class="card-body">
+            <h6 class="fw-bold mb-1">${p.name}</h6>
+            <div class="small text-muted mb-1">${p.farmer_name || ''} ${p.farmer_location ? '· '+p.farmer_location : ''}</div>
+            <div class="product-price">₹${p.price}/${p.unit}</div>
+            ${renderStars(p.avg_rating)} <small class="text-muted">(${p.review_count})</small>
+            ${p.is_pre_harvest ? '<span class="pre-harvest-badge ms-1">Pre-Harvest</span>' : ''}
+            <button class="btn btn-green btn-sm w-100 mt-2" onclick="addToCart(${p.id})" data-i18n="product.addcart">Add to Cart</button>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById('featuredProducts').innerHTML = '<p class="text-center text-muted">Failed to load products</p>';
+  }
+}
+document.addEventListener('DOMContentLoaded', loadFeatured);
+</script>
+</body>
+</html>

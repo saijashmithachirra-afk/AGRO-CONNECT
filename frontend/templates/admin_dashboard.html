@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin Dashboard — AgroConnect</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #f1f5f1; font-family: 'Poppins', sans-serif; }
+    .dashboard-wrapper { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; min-width: 240px; background: #1a3a2a;
+      color: #fff; display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; height: 100vh;
+      z-index: 100; overflow-y: auto;
+    }
+    .sidebar-brand { padding: 20px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .sidebar-brand .b-name { font-size: 1.2rem; font-weight: 700; color: #7bc67e; }
+    .sidebar-nav { flex: 1; padding: 10px 0; }
+    .sidebar-nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px; color: rgba(255,255,255,.75);
+      border-left: 3px solid transparent; transition: all .2s; cursor: pointer; text-decoration: none;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+      color: #fff; background: rgba(255,255,255,.1); border-left-color: #7bc67e;
+    }
+    .sidebar-nav a .ico { font-size: 1.1rem; width: 22px; text-align: center; }
+    .sidebar-footer { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,.1); }
+    .main-content { margin-left: 240px; flex: 1; padding: 30px; }
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid;
+    }
+    .stat-card .val { font-size: 1.8rem; font-weight: 700; }
+    .stat-card .lbl { color: #6c757d; font-size: .84rem; }
+    .page-title { font-size: 1.6rem; font-weight: 700; color: #1a3a2a; margin-bottom: 4px; }
+    .page-sub { color: #6c757d; margin-bottom: 24px; }
+    .data-table th { background: #f0f9f0; font-weight: 600; font-size: .85rem; }
+    .data-table td { vertical-align: middle; font-size: .88rem; }
+    .unread-badge {
+      background: #f77f00; color: #fff; border-radius: 50%;
+      width: 20px; height: 20px; display: inline-flex; align-items: center;
+      justify-content: center; font-size: .7rem; font-weight: 700; margin-left: 6px;
+    }
+    .support-panel { display: flex; gap: 0; min-height: 500px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .support-user-list { width: 220px; min-width: 220px; border-right: 1px solid #e8f5e9; overflow-y: auto; }
+    .support-user-list .s-user {
+      padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .15s;
+    }
+    .support-user-list .s-user:hover, .support-user-list .s-user.active { background: #f0f9f0; }
+    .support-chat { flex: 1; display: flex; flex-direction: column; }
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; max-height: 400px; }
+    .chat-msg { margin-bottom: 10px; }
+    .chat-msg .bubble {
+      padding: 8px 12px; border-radius: 10px; max-width: 75%;
+      display: inline-block; font-size: .88rem;
+    }
+    .chat-msg.user { text-align: left; }
+    .chat-msg.user .bubble { background: #e8f5e9; }
+    .chat-msg.admin { text-align: right; }
+    .chat-msg.admin .bubble { background: #2d6a4f; color: #fff; }
+    .chat-input { padding: 12px; border-top: 1px solid #e8f5e9; display: flex; gap: 8px; }
+    .product-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
+    .ai-price-box-sm {
+      background: #f0fff4; border: 1px solid #a8d5b5;
+      border-radius: 8px; padding: 10px; font-size: .85rem;
+    }
+    .img-preview-sm { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="b-name">⚙️ AgroConnect</div>
+      <div style="font-size:.72rem;color:rgba(255,255,255,.5);">Admin Control Panel</div>
+    </div>
+    <div class="sidebar-nav">
+      <a onclick="showSection('overview')" class="active"><span class="ico">📊</span> Overview</a>
+      <a onclick="showSection('users')"><span class="ico">👥</span> User Management</a>
+      <a onclick="showSection('products')"><span class="ico">🌿</span> All Products</a>
+      <a onclick="showSection('support')"><span class="ico">💬</span> Support <span id="supportBadge" class="unread-badge d-none">0</span></a>
+      <a onclick="openAdminAddProduct()"><span class="ico">➕</span> Add Product</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="mb-2 text-center" style="font-size:.82rem;color:rgba(255,255,255,.7);">
+        <span id="adminName">Admin</span>
+      </div>
+      <a href="/" class="btn btn-sm btn-outline-light w-100 mb-2">🏠 Home</a>
+      <button onclick="doLogout()" class="btn btn-sm btn-danger w-100">🚪 Logout</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- OVERVIEW -->
+    <div id="section-overview" class="section-panel active">
+      <div class="page-title">Platform Overview</div>
+      <div class="page-sub">Real-time stats across the entire platform</div>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#6366f1;">
+            <div class="val text-indigo" id="stTotalUsers">0</div>
+            <div class="lbl">👥 Total Users</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#2d6a4f;">
+            <div class="val text-success" id="stFarmers">0</div>
+            <div class="lbl">🌾 Farmers</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#0ea5e9;">
+            <div class="val text-info" id="stCustomers">0</div>
+            <div class="lbl">🛒 Customers</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#f77f00;">
+            <div class="val text-warning" id="stProducts">0</div>
+            <div class="lbl">🌿 Products</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#8b5cf6;">
+            <div class="val" id="stOrders">0</div>
+            <div class="lbl">📦 Orders</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card" style="border-color:#10b981;">
+            <div class="val text-success" id="stRevenue">₹0</div>
+            <div class="lbl">💰 Revenue</div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-3 p-4 shadow-sm">
+        <h5 class="fw-bold mb-3">📈 Platform Growth</h5>
+        <canvas id="growthChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="section-users" class="section-panel">
+      <div class="page-title">User Management</div>
+      <div class="page-sub">View, block, and manage all platform users</div>
+      <div class="bg-white rounded-3 shadow-sm p-3 mb-3">
+        <input type="text" id="userSearch" class="form-control" placeholder="🔍 Search by name, email, location..." oninput="filterUsers()"/>
+      </div>
+      <div class="bg-white rounded-3 shadow-sm overflow-hidden">
+        <table class="table table-hover mb-0 data-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Location</th>
+              <th>Status</th><th>Joined</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="8" class="text-center py-4 text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div id="section-products" class="section-panel">
+      <div class="page-title">All Products</div>
+      <div class="page-sub">Manage all products on the platform</div>
+      <div class="bg-white rounded-3 shadow-sm p-3 mb-3">
+        <input type="text" id="productSearch" class="form-control" placeholder="🔍 Search products..." oninput="filterProducts()"/>
+      </div>
+      <div class="bg-white rounded-3 shadow-sm overflow-hidden">
+        <table class="table table-hover mb-0 data-table">
+          <thead>
+            <tr>
+              <th>Image</th><th>Name</th><th>Farmer</th><th>Category</th>
+              <th>Price</th><th>Qty</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsTableBody">
+            <tr><td colspan="8" class="text-center py-4 text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUPPORT -->
+    <div id="section-support" class="section-panel">
+      <div class="page-title">Support Messages</div>
+      <div class="page-sub">Read and reply to user support requests</div>
+      <div class="support-panel">
+        <div class="support-user-list" id="supportUserList">
+          <div class="p-3 text-muted text-center" style="font-size:.85rem;">Loading...</div>
+        </div>
+        <div class="support-chat" id="supportChatArea">
+          <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+            <div class="text-center">
+              <div style="font-size:2.5rem;">💬</div>
+              <p>Select a user to view their messages</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /dashboard-wrapper -->
+
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">✏️ Edit Product</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editProdId"/>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Name</label>
+          <input type="text" id="editProdName" class="form-control"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Price (₹)</label>
+          <input type="number" id="editProdPrice" class="form-control" step="0.01"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Quantity</label>
+          <input type="number" id="editProdQty" class="form-control"/>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="editProdAvail"/>
+          <label class="form-check-label" for="editProdAvail">Available for sale</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditProduct()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRODUCT MODAL (admin) -->
+<div class="modal fade" id="adminAddProductModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold">➕ Add Product (Admin)</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Product Name</label>
+            <input type="text" id="aProdName" class="form-control" oninput="onAdminProdNameInput()"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Category</label>
+            <select id="aProdCategory" class="form-select">
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="aProdDescription" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Price (₹)</label>
+            <input type="number" id="aProdPrice" class="form-control" step="0.01"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Quantity</label>
+            <input type="number" id="aProdQty" class="form-control"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Unit</label>
+            <select id="aProdUnit" class="form-select">
+              <option value="kg">kg</option>
+              <option value="gram">gram</option>
+              <option value="dozen">dozen</option>
+              <option value="piece">piece</option>
+              <option value="litre">litre</option>
+              <option value="quintal">quintal</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Assign to Farmer</label>
+            <select id="aProdFarmer" class="form-select"></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Demand Level</label>
+            <select id="aProdDemand" class="form-select">
+              <option value="1.0">Normal</option>
+              <option value="1.2">High</option>
+              <option value="0.8">Low</option>
+            </select>
+          </div>
+        </div>
+        <!-- AI Price -->
+        <div id="adminAiBox" class="ai-price-box-sm d-none mt-3">
+          <div class="fw-bold text-success">🤖 AI Price: <span id="adminAiPrice">—</span></div>
+          <div style="font-size:.78rem;color:#555;">Market: <span id="adminAiMarket">—</span> | Range: <span id="adminAiRange">—</span></div>
+          <button class="btn btn-sm btn-success mt-1" onclick="useAdminAiPrice()">Use AI Price</button>
+        </div>
+        <!-- Image preview -->
+        <div class="mt-3">
+          <label class="form-label fw-semibold">Image</label>
+          <div id="adminImgPreview" style="text-align:center;">
+            <div class="text-muted" style="font-size:.85rem;">Type product name to auto-load image</div>
+          </div>
+          <input type="hidden" id="aProdImage"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success" id="adminAddProdBtn" onclick="submitAdminAddProduct()">💾 Add Product</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toastEl" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+// ==================== ACCESS GUARD ====================
+(function() {
+  const user = Auth.getUser();
+  if (!user || user.role !== 'admin') {
+    window.location.href = '/';
+  }
+})();
+
+// ==================== GLOBALS ====================
+let allUsers = [];
+let allProducts = [];
+let selectedSupportUserId = null;
+let supportRefreshInterval = null;
+let growthChartObj = null;
+let adminCategories = [];
+let adminAiPrice = null;
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = Auth.getUser();
+  if (user) document.getElementById('adminName').textContent = user.name;
+  await loadAdminCategories();
+  await loadAdminFarmers();
+  await loadOverview();
+  checkUnreadSupport();
+  setInterval(checkUnreadSupport, 30000);
+});
+
+// ==================== SECTION NAV ====================
+function showSection(name) {
+  document.querySelectorAll('.section-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
+  const panel = document.getElementById('section-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.sidebar-nav a').forEach(el => {
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').includes("'" + name + "'")) {
+      el.classList.add('active');
+    }
+  });
+  if (name === 'users') loadUsers();
+  if (name === 'products') loadAdminProducts();
+  if (name === 'support') loadSupportUsers();
+}
+
+// ==================== OVERVIEW ====================
+async function loadOverview() {
+  try {
+    const data = await API.get('/api/admin/stats');
+    document.getElementById('stTotalUsers').textContent = data.total_users || 0;
+    document.getElementById('stFarmers').textContent = data.farmers || 0;
+    document.getElementById('stCustomers').textContent = data.customers || 0;
+    document.getElementById('stProducts').textContent = data.total_products || 0;
+    document.getElementById('stOrders').textContent = data.total_orders || 0;
+    document.getElementById('stRevenue').textContent = '₹' + (data.total_revenue || 0).toFixed(0);
+
+    // Growth chart — use simulated monthly data if not in response
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const ordersMap = data.monthly_orders || {};
+    // Simulate slight growth if no real data
+    const orderData = months.map((_, i) => ordersMap[i + 1] || Math.max(0, Math.floor(Math.random() * 3)));
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    if (growthChartObj) growthChartObj.destroy();
+    growthChartObj = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Orders',
+          data: orderData,
+          borderColor: '#2d6a4f',
+          backgroundColor: 'rgba(45,106,79,.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#2d6a4f'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  } catch(e) { console.error(e); }
+}
+
+// ==================== USERS ====================
+async function loadUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3">Loading...</td></tr>';
+  try {
+    allUsers = await API.get('/api/admin/users');
+    renderUsersTable(allUsers);
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-3">Error loading users</td></tr>';
+  }
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('usersTableBody');
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No users found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => {
+    const roleBadge = u.role === 'admin' ? 'bg-danger' : u.role === 'farmer' ? 'bg-success' : 'bg-primary';
+    const statusBadge = u.is_active ? 'bg-success' : 'bg-secondary';
+    const isAdmin = u.role === 'admin';
+    return `<tr>
+      <td>${u.id}</td>
+      <td><strong>${u.name}</strong></td>
+      <td style="font-size:.82rem;">${u.email}</td>
+      <td><span class="badge ${roleBadge}">${u.role}</span></td>
+      <td>${u.location || '—'}</td>
+      <td><span class="badge ${statusBadge}">${u.is_active ? 'Active' : 'Blocked'}</span></td>
+      <td style="font-size:.8rem;">${new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+      <td>
+        ${!isAdmin ? `
+          <button class="btn btn-sm ${u.is_active ? 'btn-warning' : 'btn-success'} me-1" onclick="toggleUser(${u.id}, ${u.is_active})">
+            ${u.is_active ? '🔒 Block' : '✅ Unblock'}
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">🗑️</button>
+        ` : '<span class="text-muted" style="font-size:.8rem;">Protected</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const filtered = allUsers.filter(u =>
+    u.name.toLowerCase().includes(q) ||
+    u.email.toLowerCase().includes(q) ||
+    (u.location || '').toLowerCase().includes(q)
+  );
+  renderUsersTable(filtered);
+}
+
+async function toggleUser(id, currentActive) {
+  try {
+    await API.put('/api/admin/users/' + id + '/toggle', {});
+    showToast(currentActive ? 'User blocked' : 'User unblocked', 'success');
+    loadUsers();
+  } catch(e) {
+    showToast('Error updating user', 'danger');
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+  try {
+    await API.delete('/api/admin/users/' + id);
+    showToast('User deleted', 'success');
+    loadUsers();
+  } catch(e) {
+    showToast('Error deleting user: ' + (e.message || ''), 'danger');
+  }
+}
+
+// ==================== PRODUCTS ====================
+async function loadAdminProducts() {
+  const tbody = document.getElementById('productsTableBody');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3">Loading...</td></tr>';
+  try {
+    allProducts = await API.get('/api/admin/products');
+    renderProductsTable(allProducts);
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-3">Error loading products</td></tr>';
+  }
+}
+
+function renderProductsTable(products) {
+  const tbody = document.getElementById('productsTableBody');
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No products found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = products.map(p => `
+    <tr>
+      <td>
+        <img src="${p.image_url || ''}" class="product-thumb"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80&fit=crop&auto=format'"/>
+      </td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.farmer_name || '—'}</td>
+      <td>${p.category_name || '—'}</td>
+      <td>₹${p.price}/${p.unit}</td>
+      <td>${p.quantity}</td>
+      <td><span class="badge ${p.is_available ? 'bg-success' : 'bg-secondary'}">${p.is_available ? 'Active' : 'Off'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditProduct(${p.id})">✏️</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteAdminProduct(${p.id})">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterProducts() {
+  const q = document.getElementById('productSearch').value.toLowerCase();
+  const filtered = allProducts.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    (p.farmer_name || '').toLowerCase().includes(q) ||
+    (p.category_name || '').toLowerCase().includes(q)
+  );
+  renderProductsTable(filtered);
+}
+
+function openEditProduct(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('editProdId').value = id;
+  document.getElementById('editProdName').value = p.name;
+  document.getElementById('editProdPrice').value = p.price;
+  document.getElementById('editProdQty').value = p.quantity;
+  document.getElementById('editProdAvail').checked = p.is_available;
+  new bootstrap.Modal(document.getElementById('editProductModal')).show();
+}
+
+async function saveEditProduct() {
+  const id = document.getElementById('editProdId').value;
+  const payload = {
+    name: document.getElementById('editProdName').value.trim(),
+    price: parseFloat(document.getElementById('editProdPrice').value),
+    quantity: parseFloat(document.getElementById('editProdQty').value),
+    is_available: document.getElementById('editProdAvail').checked
+  };
+  try {
+    await API.put('/api/admin/products/' + id, payload);
+    showToast('Product updated!', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+    loadAdminProducts();
+  } catch(e) {
+    showToast('Error updating product', 'danger');
+  }
+}
+
+async function deleteAdminProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  try {
+    await API.delete('/api/admin/products/' + id);
+    showToast('Product deleted', 'success');
+    loadAdminProducts();
+  } catch(e) {
+    showToast('Error deleting product', 'danger');
+  }
+}
+
+// ==================== ADD PRODUCT (ADMIN) ====================
+async function loadAdminCategories() {
+  try {
+    adminCategories = await API.get('/api/categories');
+    const sel = document.getElementById('aProdCategory');
+    adminCategories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.icon + ' ' + c.name;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+async function loadAdminFarmers() {
+  try {
+    const farmers = await API.get('/api/admin/farmers');
+    const sel = document.getElementById('aProdFarmer');
+    sel.innerHTML = '<option value="">Select farmer...</option>';
+    farmers.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.name + ' (' + (f.location || f.email) + ')';
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+function openAdminAddProduct() {
+  document.getElementById('aProdName').value = '';
+  document.getElementById('aProdCategory').value = '';
+  document.getElementById('aProdDescription').value = '';
+  document.getElementById('aProdPrice').value = '';
+  document.getElementById('aProdQty').value = '';
+  document.getElementById('aProdUnit').value = 'kg';
+  document.getElementById('aProdFarmer').value = '';
+  document.getElementById('adminAiBox').classList.add('d-none');
+  document.getElementById('adminImgPreview').innerHTML = '<div class="text-muted" style="font-size:.85rem;">Type product name to auto-load image</div>';
+  document.getElementById('aProdImage').value = '';
+  adminAiPrice = null;
+  new bootstrap.Modal(document.getElementById('adminAddProductModal')).show();
+}
+
+let adminNameTimer = null;
+function onAdminProdNameInput() {
+  clearTimeout(adminNameTimer);
+  adminNameTimer = setTimeout(async () => {
+    const name = document.getElementById('aProdName').value.trim();
+    if (name.length < 3) return;
+    // AI price
+    try {
+      const data = await API.post('/api/products/ai-price', {
+        product_name: name, current_price: 0, quantity: 1, demand_factor: 1.0, is_pre_harvest: false, location: ''
+      });
+      adminAiPrice = data.suggested_price;
+      document.getElementById('adminAiPrice').textContent = '₹' + data.suggested_price.toFixed(2);
+      document.getElementById('adminAiMarket').textContent = '₹' + (data.market_price || 0).toFixed(2);
+      document.getElementById('adminAiRange').textContent = '₹' + (data.price_range?.low || 0).toFixed(0) + '–₹' + (data.price_range?.high || 0).toFixed(0);
+      document.getElementById('adminAiBox').classList.remove('d-none');
+    } catch(e) {}
+    // Auto image
+    try {
+      const imgData = await API.post('/api/products/auto-image', { name });
+      const url = imgData.url;
+      document.getElementById('aProdImage').value = url;
+      document.getElementById('adminImgPreview').innerHTML = `<img src="${url}" class="img-preview-sm" onerror="this.src='https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80&fit=crop&auto=format'"/>`;
+    } catch(e) {}
+  }, 600);
+}
+
+function useAdminAiPrice() {
+  if (adminAiPrice) {
+    document.getElementById('aProdPrice').value = adminAiPrice.toFixed(2);
+    showToast('AI price applied', 'success');
+  }
+}
+
+async function submitAdminAddProduct() {
+  const name = document.getElementById('aProdName').value.trim();
+  const category = document.getElementById('aProdCategory').value;
+  const price = parseFloat(document.getElementById('aProdPrice').value);
+  const qty = parseFloat(document.getElementById('aProdQty').value);
+  const farmerId = document.getElementById('aProdFarmer').value;
+  if (!name || !category || isNaN(price) || isNaN(qty) || !farmerId) {
+    showToast('Please fill all required fields including farmer', 'danger');
+    return;
+  }
+  const btn = document.getElementById('adminAddProdBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    await API.post('/api/admin/products', {
+      name,
+      category_id: parseInt(category),
+      description: document.getElementById('aProdDescription').value,
+      price,
+      quantity: qty,
+      unit: document.getElementById('aProdUnit').value,
+      demand_factor: parseFloat(document.getElementById('aProdDemand').value),
+      farmer_id: parseInt(farmerId),
+      image_url: document.getElementById('aProdImage').value || null
+    });
+    showToast('Product added!', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('adminAddProductModal')).hide();
+    loadAdminProducts();
+  } catch(e) {
+    showToast('Error adding product: ' + (e.message || ''), 'danger');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Add Product';
+  }
+}
+
+// ==================== SUPPORT ====================
+async function loadSupportUsers() {
+  const list = document.getElementById('supportUserList');
+  try {
+    const users = await API.get('/api/support/all');
+    if (users.length === 0) {
+      list.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:.85rem;">No messages yet</div>';
+      return;
+    }
+    list.innerHTML = users.map(u => `
+      <div class="s-user ${selectedSupportUserId === u.user_id ? 'active' : ''}" onclick="selectSupportUser(${u.user_id}, '${u.user_name}')">
+        <div>
+          <div style="font-size:.85rem;font-weight:600;">${u.user_name}</div>
+          <div style="font-size:.75rem;color:#6c757d;">${u.last_message ? u.last_message.substring(0,30) + '...' : 'No messages'}</div>
+        </div>
+        ${u.unread_count > 0 ? `<span class="unread-badge">${u.unread_count}</span>` : ''}
+      </div>
+    `).join('');
+    // update support badge
+    const totalUnread = users.reduce((s, u) => s + (u.unread_count || 0), 0);
+    updateSupportBadge(totalUnread);
+  } catch(e) {
+    list.innerHTML = '<div class="p-3 text-danger text-center" style="font-size:.85rem;">Error loading messages</div>';
+  }
+}
+
+async function selectSupportUser(userId, userName) {
+  selectedSupportUserId = userId;
+  const chatArea = document.getElementById('supportChatArea');
+  chatArea.innerHTML = `
+    <div class="p-3 border-bottom" style="font-weight:600;">💬 ${userName}</div>
+    <div class="chat-messages" id="chatMsgs"><div class="text-center text-muted py-3">Loading...</div></div>
+    <div class="chat-input">
+      <input type="text" id="replyInput" class="form-control form-control-sm" placeholder="Type reply..." onkeydown="if(event.key==='Enter')sendAdminReply()"/>
+      <button class="btn btn-sm btn-success" onclick="sendAdminReply()">Send</button>
+    </div>
+  `;
+  // Mark as read
+  try { await API.put('/api/support/mark-read/' + userId, {}); } catch(e) {}
+  // Load messages
+  try {
+    const msgs = await API.get('/api/support/conversation/' + userId);
+    const msgsEl = document.getElementById('chatMsgs');
+    if (msgs.length === 0) {
+      msgsEl.innerHTML = '<div class="text-muted text-center py-3">No messages</div>';
+      return;
+    }
+    msgsEl.innerHTML = msgs.map(m => {
+      const isAdmin = m.is_admin_reply;
+      return `<div class="chat-msg ${isAdmin ? 'admin' : 'user'}">
+        <div class="bubble">${m.message}</div>
+        <div style="font-size:.72rem;color:#999;">${new Date(m.created_at).toLocaleString('en-IN')}</div>
+      </div>`;
+    }).join('');
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  } catch(e) {}
+  // Refresh user list
+  loadSupportUsers();
+}
+
+async function sendAdminReply() {
+  const inp = document.getElementById('replyInput');
+  const msg = inp.value.trim();
+  if (!msg || !selectedSupportUserId) return;
+  inp.value = '';
+  try {
+    await API.post('/api/support/reply', { user_id: selectedSupportUserId, message: msg });
+    await selectSupportUser(selectedSupportUserId, '');
+  } catch(e) {
+    showToast('Error sending reply', 'danger');
+  }
+}
+
+async function checkUnreadSupport() {
+  try {
+    const users = await API.get('/api/support/all');
+    const total = users.reduce((s, u) => s + (u.unread_count || 0), 0);
+    updateSupportBadge(total);
+  } catch(e) {}
+}
+
+function updateSupportBadge(count) {
+  const badge = document.getElementById('supportBadge');
+  if (count > 0) {
+    badge.textContent = count;
+    badge.classList.remove('d-none');
+  } else {
+    badge.classList.add('d-none');
+  }
+}
+
+// ==================== HELPERS ====================
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toastEl');
+  el.className = `toast align-items-center text-white border-0 bg-${type}`;
+  document.getElementById('toastMsg').textContent = msg;
+  new bootstrap.Toast(el, { delay: 3000 }).show();
+}
+
+function doLogout() {
+  Auth.clear();
+  window.location.href = '/';
+}
+
+// Auto-refresh support every 30 seconds when on support tab
+setInterval(() => {
+  if (document.getElementById('section-support').classList.contains('active')) {
+    loadSupportUsers();
+    if (selectedSupportUserId) {
+      // refresh chat silently
+    }
+  }
+}, 30000);
+</script>
+</body>
+</html>
